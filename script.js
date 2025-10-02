@@ -530,10 +530,10 @@ class VectorSimulator {
         const btn = document.getElementById('componentsBtn');
         if (this.showComponents) {
             btn.classList.add('active');
-            btn.textContent = '📊 Hide Components';
+            btn.textContent = 'Hide Components';
         } else {
             btn.classList.remove('active');
-            btn.textContent = '📊 Show Components';
+            btn.textContent = 'Show Components';
         }
         this.draw();
         this.updateVectorInfo();
