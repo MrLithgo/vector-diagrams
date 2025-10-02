@@ -350,6 +350,123 @@ class VectorSimulator {
   /*********************
    * Drawing utilities
    *********************/
+  
+  /**
+ * Draw small internal angle arcs & labels for a tip-to-tail chain (triangle)
+ * Expects rightVectors arranged in order (tip-to-tail).
+ * Call this after drawing vectors & connection lines in drawRight().
+ */
+drawTriangleAngles(ctx) {
+  if (!this.rightVectors || this.rightVectors.length < 2) return;
+
+  const verts = [];
+  verts.push({...this.rightVectors[0].start});
+  this.rightVectors.forEach(v => verts.push({...v.end}));
+
+  for (let i = 1; i < verts.length - 1; i++) {
+    const A = verts[i - 1];
+    const B = verts[i];
+    const C = verts[i + 1];
+
+    const v1 = { x: A.x - B.x, y: A.y - B.y };
+    const v2 = { x: C.x - B.x, y: C.y - B.y };
+
+    const len1 = Math.hypot(v1.x, v1.y);
+    const len2 = Math.hypot(v2.x, v2.y);
+
+    // skip very short segments
+    if (len1 < 8 || len2 < 8) continue;
+
+    // compute internal angle
+    let cosTheta = (v1.x * v2.x + v1.y * v2.y) / (len1 * len2);
+    cosTheta = Math.max(-1, Math.min(1, cosTheta));
+    const theta = Math.acos(cosTheta); // radians
+
+    // directions of adjacent segments
+    const ang1 = Math.atan2(v1.y, v1.x);
+    const ang2 = Math.atan2(v2.y, v2.x);
+
+    // normalize delta to -PI..PI
+    let a1 = ang1;
+    let a2 = ang2;
+    let delta = a2 - a1;
+    while (delta <= -Math.PI) delta += 2 * Math.PI;
+    while (delta > Math.PI) delta -= 2 * Math.PI;
+
+    const arcStart = a1;
+    const arcEnd = a1 + delta;
+
+    // radius for arc (fraction of adjacent segment length)
+    const radius = Math.max(12, Math.min(len1, len2) * 0.28);
+
+    // draw filled translucent wedge for contrast
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(B.x, B.y);
+    ctx.arc(B.x, B.y, radius, arcStart, arcEnd, delta < 0);
+    ctx.closePath();
+    ctx.fillStyle = "rgba(44, 62, 80, 0.08)";
+    ctx.fill();
+
+    // arc outline
+    ctx.beginPath();
+    ctx.arc(B.x, B.y, radius, arcStart, arcEnd, delta < 0);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = "rgba(44,62,80,0.6)";
+    ctx.stroke();
+
+    // compute bisector and label position
+    const bisector = a1 + delta / 2;
+    const textRadius = radius * 0.6;
+    const textX = B.x + Math.cos(bisector) * textRadius;
+    const textY = B.y + Math.sin(bisector) * textRadius;
+
+    // nearest-degree text
+    const angleDeg = theta * 180 / Math.PI;
+    const angleText = Math.round(angleDeg) + "°";
+
+    // draw rounded background behind text for legibility
+    ctx.font = "bold 14px Arial"; // larger, for visibility
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const metrics = ctx.measureText(angleText);
+    const textWidth = metrics.width;
+    const paddingX = 6;
+    const paddingY = 4;
+    const rectW = textWidth + paddingX * 2;
+    const rectH = 16 + paddingY; // approximate height for 14px font
+    const rectX = textX - rectW / 2;
+    const rectY = textY - rectH / 2;
+
+    // rounded rect (semi-opaque white) + subtle stroke
+    const radiusCorner = 6;
+    ctx.beginPath();
+    ctx.moveTo(rectX + radiusCorner, rectY);
+    ctx.lineTo(rectX + rectW - radiusCorner, rectY);
+    ctx.quadraticCurveTo(rectX + rectW, rectY, rectX + rectW, rectY + radiusCorner);
+    ctx.lineTo(rectX + rectW, rectY + rectH - radiusCorner);
+    ctx.quadraticCurveTo(rectX + rectW, rectY + rectH, rectX + rectW - radiusCorner, rectY + rectH);
+    ctx.lineTo(rectX + radiusCorner, rectY + rectH);
+    ctx.quadraticCurveTo(rectX, rectY + rectH, rectX, rectY + rectH - radiusCorner);
+    ctx.lineTo(rectX, rectY + radiusCorner);
+    ctx.quadraticCurveTo(rectX, rectY, rectX + radiusCorner, rectY);
+    ctx.closePath();
+
+    ctx.fillStyle = "rgba(255,255,255,0.9)"; // almost opaque white
+    ctx.fill();
+    ctx.lineWidth = 0.8;
+    ctx.strokeStyle = "rgba(44,62,80,0.12)";
+    ctx.stroke();
+
+    // draw text on top
+    ctx.fillStyle = "rgba(44,62,80,0.95)";
+    ctx.fillText(angleText, textX, textY);
+
+    ctx.restore();
+  }
+}
+
+
   drawVector(ctx, start, end, color, width = 2, temporary = false, isResultant = false) {
     const dx = end.x - start.x;
     const dy = end.y - start.y;
@@ -470,7 +587,7 @@ class VectorSimulator {
       this.drawVector(this.rightCtx, vector.start, vector.end, vector.color, 3);
       if (this.showComponents) this.drawComponents(this.rightCtx, vector);
     });
-
+this.drawTriangleAngles(this.rightCtx);
     // tip-to-tail connection lines
     if (this.rightVectors.length > 1) {
       this.rightCtx.strokeStyle = '#95a5a6';
@@ -513,7 +630,7 @@ class VectorSimulator {
 
     if (this.leftVectors.length === 0) {
       leftInfo.innerHTML = `<div class="vector-card"><p>Click and drag from the center to draw force vectors. Angles and magnitudes automatically calculated.</p></div>`;
-      rightInfo.innerHTML = `<div class="vector-card"><p>Vectors appear here. Drag arrow head to edit magnitude/angle; drag line/body to move the vector.</p></div>`;
+      rightInfo.innerHTML = `<div class="vector-card"><p><strong>Instructions:</strong> Drag arrow head on the right to edit magnitude & angle once triangle is built. Drag the body to reposition.</p></div>`;
       return;
     }
 
