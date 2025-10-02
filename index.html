@@ -1,16 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
-  <head>
-    <meta charset="UTF-8">
-    <title>vectors</title>
-    <link rel="stylesheet" href="style.css">
-
-  </head>
-    
-  <body>
-  <!DOCTYPE html>
-<html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -36,14 +25,14 @@
                 <button class="scenario-btn" onclick="simulator.loadScenario('projectile')">Projectile Motion</button>
             </div>
             <button class="btn teal-btn" id="componentsBtn" onclick="simulator.toggleComponents()">Show Components</button>
-            <button class="btn gold-btn" id="triangleBtn" onclick="simulator.autoArrangeTriangle()">Auto Triangle</button>
+            <button class="btn gold-btn" id="triangleBtn" onclick="simulator.autoArrangeTriangle()">Auto Draw</button>
             <button class="btn coral-btn" onclick="simulator.clearAll()">Clear All</button>
         </div>
         
         <div class="main-content">
             <div class="left-panel">
                 <div class="panel-header">
-                    Force Diagram - Draw vectors from center point
+                    Force Diagram - Draw vectors from centre point
                 </div>
                 <div class="canvas-container">
                     <canvas id="leftCanvas" width="400" height="400"></canvas>
@@ -86,10 +75,16 @@
                             <p>Vectors from the left appear here. Drag them to form a vector triangle and see the resultant.</p>
                         </div>
                     </div>
-                    <div class="resultant-info" id="resultantInfo" style="display: none;">
-                        <h5>Resultant Vector</h5>
-                        <div id="resultantText"></div>
-                    </div>
+                  
+
+                    <div class="resultant-info" id="resultantInfo">
+    <h5>Resultant Vector</h5>
+    <div id="resultantText">
+        <strong>Magnitude:</strong> 0 N<br>
+        <strong>Direction:</strong> 0°<br>
+        <strong>Components:</strong> Rx = 0 N, Ry = 0 N
+    </div>
+</div>
                 </div>
             </div>
         </div>
@@ -98,9 +93,4 @@
     <!-- Script -->
     <script src="script.js"></script>
 </body>
-</html>
-    <script  src="script.js"></script>
-
-  </body>
-  
 </html>
