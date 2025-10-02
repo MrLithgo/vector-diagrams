@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>vectors</title>
+    <link rel="stylesheet" href="./style.css">
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Vector Physics Simulator - Force Diagrams & Vector Triangles</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Montserrat:wght@700&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Vector Physics</h1>
+        </div>
+        
+        <div class="controls">
+            <div class="preset-scenarios">
+                <button class="scenario-btn" onclick="simulator.loadScenario('equilibrium')">Equilibrium</button>
+                <button class="scenario-btn" onclick="simulator.loadScenario('incline')">Inclined Plane</button>
+                <button class="scenario-btn" onclick="simulator.loadScenario('tension')">Tension Forces</button>
+                <button class="scenario-btn" onclick="simulator.loadScenario('projectile')">Projectile Motion</button>
+            </div>
+            <button class="btn teal-btn" id="componentsBtn" onclick="simulator.toggleComponents()">Show Components</button>
+            <button class="btn gold-btn" id="triangleBtn" onclick="simulator.autoArrangeTriangle()">Auto Triangle</button>
+            <button class="btn coral-btn" onclick="simulator.clearAll()">Clear All</button>
+        </div>
+        
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="panel-header">
+                    Force Diagram - Draw vectors from center point
+                </div>
+                <div class="canvas-container">
+                    <canvas id="leftCanvas" width="400" height="400"></canvas>
+                </div>
+                <div class="info-panel">
+                    <h4>Force Vectors</h4>
+                    <div class="add-vector-section">
+                        <h5>Add Vector Numerically</h5>
+                        <div class="input-group">
+                            <label>Magnitude:</label>
+                            <input type="number" id="magnitudeInput" placeholder="50" min="1" max="200">
+                            <span>N</span>
+                        </div>
+                        <div class="input-group">
+                            <label>Angle:</label>
+                            <input type="number" id="angleInput" placeholder="0" min="-360" max="360">
+                            <span>°</span>
+                        </div>
+                        <button class="btn btn-primary" onclick="simulator.addVectorNumerically()">Add Vector</button>
+                    </div>
+                    <div class="vector-info" id="leftVectorInfo">
+                        <div class="vector-card">
+                            <p>Click and drag from the center to draw force vectors, or use the numerical inputs above.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <div class="panel-header">
+                    Vector Triangle - Drag to form vector addition
+                </div>
+                <div class="canvas-container">
+                    <canvas id="rightCanvas" width="400" height="400"></canvas>
+                </div>
+                <div class="info-panel">
+                    <h4>Vector Analysis</h4>
+                    <div class="vector-info" id="rightVectorInfo">
+                        <div class="vector-card">
+                            <p>Vectors from the left appear here. Drag them to form a vector triangle and see the resultant.</p>
+                        </div>
+                    </div>
+                    <div class="resultant-info" id="resultantInfo" style="display: none;">
+                        <h5>Resultant Vector</h5>
+                        <div id="resultantText"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script -->
+    <script src="script.js"></script>
+</body>
+</html>
+    <script  src="./script.js"></script>
+
+  </body>
+  
+</html>

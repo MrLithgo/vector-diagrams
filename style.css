@@ -1,0 +1,333 @@
+/* User theme + your original styles combined/cleaned */
+
+/* Reset + theme root variables you requested */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --navy: #2C3E50;
+    --softgray: #ECF0F1;
+    --teal: #1ABC9C;
+    --gold: #F1C40F;
+    --slate: #7F8C8D;
+    --coral: #E74C3C;
+    --white: #FFFFFF;
+    --gray-100: #F7FAFC;
+    --gray-200: #EDF2F7;
+    --gray-300: #E2E8F0;
+}
+
+/* Page base */
+body {
+    font-family: 'Inter', sans-serif;
+    background: white;
+    min-height: 100vh;
+    color: var(--navy);
+}
+
+/* Layout container */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: var(--white);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+/* Button styles */
+.teal-btn {
+    background-color: rgba(26, 188, 156, 0.8);
+    color: white;
+}
+
+.teal-btn:hover {
+    
+}
+
+.gold-btn {
+    background-color: rgba(241, 196, 15, 0.8);
+    color: var(--navy);
+}
+
+.gold-btn:hover {
+    background-color: rgba(241, 196, 15, 0.7);
+}
+
+.coral-btn {
+    background-color: rgba(231, 76, 60, 0.8);
+    color: white;
+}
+
+.coral-btn:hover {
+    background-color: rgba(231, 76, 60, 0.7);
+}
+
+.navy-btn {
+    background-color: rgba(44, 62, 80, 0.8);
+    color: white;
+}
+
+.navy-btn:hover {
+    background-color: rgba(44, 62, 80, 0.7);
+}
+.button-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 24px
+}
+
+.btn {
+    border: 0;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: box-shadow .12s ease, transform .08s ease
+}
+
+
+/* Header */
+.header {
+    background: var(--gray);
+    color: var(--navy);
+    padding: 20px;
+    text-align: center;
+}
+.header h1 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 600;
+    font-family: 'Montserrat', sans-serif;
+}
+
+/* Controls */
+.controls {
+    padding: 15px 20px;
+    background: var(--gray-100);
+    border-bottom: 1px solid var(--gray-300);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+}
+
+
+.btn:active { transform: translateY(1px); }
+
+.btn-primary {
+    background: var(--teal);
+    color: white;
+}
+
+.btn-secondary {
+    background: var(--slate);
+    color: white;
+}
+.btn-success {
+    background: #27ae60;
+    color: white;
+}
+.btn-danger {
+    background: var(--coral);
+    color: white;
+}
+.btn.active { background: #27ae60; color: white; }
+
+/* Main split panels */
+.main-content {
+    display: flex;
+    flex: 1;
+    min-height: 600px;
+}
+
+.left-panel, .right-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.left-panel {
+    border-right: 3px solid #bdc3c7;
+    background: #fafafa;
+}
+
+.right-panel {
+    background: #f8f9fa;
+}
+
+/* Panel headers */
+.panel-header {
+    background: #34495e;
+    color: white;
+    padding: 15px;
+    text-align: center;
+    font-weight: 600;
+    font-family: 'Montserrat', sans-serif;
+}
+
+/* Canvas container */
+.canvas-container {
+    flex: 1;
+    position: relative;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Canvas visuals */
+canvas {
+    border: 2px solid #bdc3c7;
+    border-radius: 8px;
+    background: white;
+    cursor: crosshair;
+    touch-action: none;
+    user-select: none;
+}
+
+/* Right canvas grabbed state */
+#rightCanvas {
+    cursor: grab;
+}
+#rightCanvas:active { cursor: grabbing; }
+
+/* Info panels */
+.info-panel {
+    background: white;
+    border-top: 2px solid #bdc3c7;
+    padding: 15px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.vector-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.vector-card {
+    background: #ecf0f1;
+    padding: 10px;
+    border-radius: 6px;
+    border-left: 4px solid #3498db;
+    font-size: 12px;
+}
+
+.vector-card h5 { margin: 0 0 8px 0; font-size: 14px; }
+
+/* Scenario buttons */
+.preset-scenarios {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.scenario-btn {
+    padding: 6px 12px;
+    background: var(--slate);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.18s ease;
+}
+.scenario-btn:hover { background: var(--navy); }
+
+/* Component/result panels */
+.components-display {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 6px;
+    padding: 10px;
+    margin-top: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+}
+
+.resultant-info {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 6px;
+    padding: 10px;
+    margin-top: 10px;
+    font-weight: 600;
+}
+
+/* Vector controls inside info */
+.vector-controls {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.input-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.input-group label { min-width: 80px; font-size: 12px; font-weight: 600; }
+.input-group input {
+    width: 70px;
+    padding: 4px 6px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.vector-edit-btn {
+    padding: 4px 8px;
+    background: #17a2b8;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    margin-left: 5px;
+}
+.vector-delete-btn {
+    padding: 4px 8px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    margin-left: 5px;
+}
+
+/* Add vector section */
+.add-vector-section {
+    background: #e9ecef;
+    border-radius: 6px;
+    padding: 15px;
+    margin-top: 10px;
+}
+.add-vector-section h5 { margin: 0 0 10px 0; color: #495057; }
+
+/* Angle display tooltip */
+.angle-display {
+    position: absolute;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    pointer-events: none;
+}
+
+/* Responsive tweaks */
+@media (max-width: 900px) {
+    .main-content { flex-direction: column; }
+    .left-panel { border-right: none; border-bottom: 3px solid #bdc3c7; }
+    canvas { max-width: 95%; height: auto; }
+}
