@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Montserrat:wght@700&display=swap" rel="stylesheet">
 
     <!-- Styles -->
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
@@ -18,6 +18,13 @@
         </div>
         
         <div class="controls">
+          <!-- Zoom controls (place inside .controls-actions) -->
+<div class="zoom-controls" aria-label="Zoom controls">
+  <button class="btn" id="zoomOutBtn" title="Zoom out">−</button>
+  <button class="btn coral-btn" id="resetZoomBtn" title="Reset zoom">Zoom Reset</button>
+  <button class="btn" id="zoomInBtn" title="Zoom in">+</button>
+</div>
+
             <div class="preset-scenarios">
                 <button class="scenario-btn" onclick="simulator.loadScenario('equilibrium')">Equilibrium</button>
                 <button class="scenario-btn" onclick="simulator.loadScenario('incline')">Inclined Plane</button>
@@ -72,7 +79,7 @@
                     <h4>Vector Analysis</h4>
                     <div class="vector-info" id="rightVectorInfo">
                         <div class="vector-card">
-                            <p><strong>Instructions:</strong> Drag arrow head on the right to edit magnitude & angle once triangle is built. Drag the body to reposition.</p>
+                           <p><strong>Instructions:</strong> Drag arrow head on the right to edit magnitude & angle once triangle is built. Drag the body to reposition.</p>
                         </div>
                     </div>
                   
