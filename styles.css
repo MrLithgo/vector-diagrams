@@ -404,3 +404,67 @@ canvas {
 .lock-btn.lock-inactive {
   background: #ecf0f1;
 }
+
+/* scenario floating box in left panel */
+.scenario-box {
+  background: rgba(240,240,240,0.8);
+  
+  left:50%;
+  transform: translateX(-50%);
+  position: absolute;
+ 
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(44,62,80,0.08);
+  padding: 10px 12px 12px 14px;
+  border: 2px solid rgba(44,62,80,0.06);
+  max-width: 100%;
+  top: 20px;
+width: 600px;              /* preferred width */
+  max-width: calc(100% - 32px); 
+  
+  z-index: 40;
+  pointer-events: auto;
+  display: block;
+}
+.scenario-box[hidden] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  
+}
+
+
+.scenario-title {
+  font-weight: 700;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1rem;
+  color: var(--navy, #2C3E50);
+  margin-bottom: 6px;
+}
+
+.scenario-text {
+  font-size: 0.92rem;
+  color: var(--slate, #7F8C8D);
+  line-height: 1.3;
+}
+
+.scenario-close {
+  position: absolute;
+  right: 8px;
+  top: 6px;
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--slate, #7F8C8D);
+}
+
+/* small screens: limit width */
+@media (max-width: 900px) {
+  .scenario-box {
+    left: 10px;
+    right: 10px;
+    top: 10px;
+  }
+  .scenario-box-content { padding-right: 36px; }
+}
