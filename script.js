@@ -3,10 +3,7 @@
 */
 
 class VectorSimulator {
-    /**
-   * Toggle the angle lock for a left vector.
-   * When locked, editing the corresponding right vector only changes magnitude (length), not angle.
-   */
+    
   toggleLock(index) {
     if (index < 0 || index >= this.leftVectors.length) return;
     const vec = this.leftVectors[index];
@@ -15,6 +12,7 @@ class VectorSimulator {
     this.updateVectorInfo();
     this.draw();
   }
+ 
 
   constructor() {
     // DOM & contexts
@@ -63,6 +61,7 @@ class VectorSimulator {
     this.MAX_SCALE = 6;
 
     // Setup UI hooks (if buttons exist in DOM)
+    
     const btnIn = document.getElementById('zoomInBtn');
     const btnOut = document.getElementById('zoomOutBtn');
     const btnReset = document.getElementById('resetZoomBtn');
@@ -1060,34 +1059,10 @@ this.drawGrid(this.rightCtx);
       this.rightCtx.setLineDash([]);
     }
 
-    // resultant is drawn by updateResultant which calls drawRight again before drawing resultant overlay.
     this.rightCtx.restore();
   }
 
-  /**
- * Draw a grid that keeps ~20px screen spacing regardless of zoom level.
- * ctx - drawing context
- * worldW, worldH - width/height in world coordinates (untransformed)
- * scale - current scale (world -> screen scale)
- */
-/**
- * drawGrid - draws a grid that *zooms* and pans with the world transform,
- * and ensures lines extend beyond the visible edges to avoid clipping.
- *
- * ctx      - canvas 2D context (already transformed to world coords by caller)
- * worldW   - width of virtual world to consider (in world units)
- * worldH   - height of virtual world (in world units)
- * scale    - current world->screen scale (CSS px per world unit)
- * offset   - optional offset in world units (not required if ctx already transformed)
- */
-/**
- * drawGrid(ctx)
- * - ctx: 2D context (caller MUST have applied world transform)
- *
- * Draws a grid whose spacing is fixed in *world units* so it visually zooms
- * together with vectors. Ensures lines are drawn a bit beyond visible bounds
- * (padScreenPx converted to world units) to avoid clipping at edges.
- */
+
 drawGrid(ctx) {
   // --- Tweakable parameters ---
   const baseWorldStep = 20;   // grid spacing in world units (change this to make squares larger/smaller at default zoom)
@@ -1265,122 +1240,134 @@ drawGrid(ctx) {
     this.draw();
     this.updateResultant();
   }
+// inside class VectorSimulator
+showScenarioBox(entry = {}) {
+  const box = document.getElementById('scenarioBox');
+  if (!box) return;
+  const titleEl = document.getElementById('scenarioTitle');
+  const textEl  = document.getElementById('scenarioText');
+  if (titleEl) titleEl.textContent = entry.title || 'Scenario';
+  if (textEl)  textEl.textContent  = entry.description || '';
+  box.hidden = false;
+  box.setAttribute('aria-hidden', 'false');
 
-  loadScenario(scenario) {
-    this.clearAll();
-    const scenarios = {
-      equilibrium: [ { magnitude:50, angle:0 }, { magnitude:50, angle:120 }, { magnitude:50, angle:240 } ],
-      incline:    [ { magnitude:60, angle:180 }, { magnitude:36, angle:150 }, { magnitude:48, angle:330 } ],
-      tension:    [ { magnitude:40, angle:45 }, { magnitude:40, angle:135 }, { magnitude:56, angle:180 } ],
-      projectile: [ { magnitude:50, angle:45 }, { magnitude:35, angle:90 }, { magnitude:35, angle:0 } ]
-    };
-    const vectors = scenarios[scenario] || [];
-    const rightRect = this.rightCanvas.getBoundingClientRect();
-    const baselineY = Math.max(80, rightRect.height - 50);
+  // optionally move focus to close button for accessibility
+  const closeBtn = document.getElementById('scenarioCloseBtn');
+  if (closeBtn) closeBtn.focus();
+}
 
-    vectors.forEach((v, i) => {
-      const radians = v.angle * Math.PI / 180;
-      const length = v.magnitude * 3;
-      const color = this.colors[i % this.colors.length];
+hideScenarioBox() {
+  const box = document.getElementById('scenarioBox');
+  if (!box) return;
+  box.hidden = true;
+  box.setAttribute('aria-hidden', 'true');
+}
+  
+  
 
-      const leftRect = this.leftCanvas.getBoundingClientRect();
-      this.leftCenter = { x: leftRect.width / 2, y: leftRect.height / 2 };
+loadScenario(scenario) {
+  
+   this.clearAll(); 
+  const scenarios = this.scenarios || {
+    resultant: {
+      vectors: [
+        { magnitude: 75, angle: 35 },
+        { magnitude: 107, angle: 125 },
+        
+      ],
+      title: "Resultant Force",
+      description: "A ship is being pulled by two tug-boats. One pulls with a force of 75 kN at an angle of 55° to the direction of travel of the ship. The other pulls with a force of 107 kN at an angle of 35° to the other side of the direction of travel. Draw a vector triangle and determine the resultant force."
+    },
+    incline: {
+      vectors: [
+        { magnitude: 65, angle: -24 },
+        { magnitude: 29, angle: 66 },
+        { magnitude: 71, angle: 180 }
+      ],
+      title: "Inclined Plane",
+      description: "A box with weight, W, is at rest on an inclined plane.  The normal reaction force is 65 N and the frictional force is 29 N up the slope.  What is the angle of the plane?"
+    },
+    tension: {
+      vectors: [
+        {magnitude: 75, angle: 180 },
+        { magnitude: 30, angle: -30 },
+        { magnitude: 30, angle: 45 }
+      ],
+      title: "Tension Forces",
+      description: "A circus performer is standing on a high wire. Their weight is 750N. One side of the wire has tension T1 and is at an angle of 30° to the horizontal and the other side has a tension of T2 and is at an agle of 45° to the horizontal. Find T1 and T2. The force diagram is drawn to a scale. Lock the angles of the tension forces and adjust the magnitude until the correct values are found."
+    },
+    projectile: {
+      vectors: [
+        { magnitude: 75, angle: 180 },
+        { magnitude: 55, angle: 90 },
+        { magnitude: 35, angle: 0 }
+      ],
+      title: "Projectile Forces",
+      description: "Forces acting on a projectile with steady horizontal wind."
+    }
+  };
 
-      const endLeft = {
-        x: this.leftCenter.x + length * Math.sin(radians),
-        y: this.leftCenter.y - length * Math.cos(radians)
-      };
+  // guard for bad keys
+  const entry = scenarios[scenario];
+  if (!entry) {
+    console.warn(`loadScenario: unknown scenario "${scenario}"`);
+    return;
+  }
 
-      this.leftVectors.push({
-  magnitude: v.magnitude,
-  angle: v.angle,
-  color,
-       locked: false 
-});
+  // vectors array for this scenario
+  const vectors = Array.isArray(entry.vectors) ? entry.vectors : [];
+
+  // clear existing scene
+  this.clearAll();
+
+  // compute baseline for right panel placement
+ const rightRect = this.rightCanvas.getBoundingClientRect();
+const baselineY = rightRect.height / 2;
 
 
-      const startX = 50 + i * 30;
-      this.rightVectors.push({
-        start: { x: startX, y: baselineY },
-        end: { x: startX + length * Math.sin(radians), y: baselineY - length * Math.cos(radians) },
-        color,
-        magnitude: v.magnitude,
-        angle: v.angle,
-        originalIndex: this.leftVectors.length - 1
-      });
+  vectors.forEach((v, i) => {
+    const radians = (v.angle || 0) * Math.PI / 180;
+    const length = (v.magnitude || 0) * 3;
+    const color = this.colors[i % this.colors.length] || this.colors[0];
+
+    // store left vector by magnitude/angle (keeps it attached to dynamic center in drawLeft)
+    this.leftVectors.push({
+      magnitude: v.magnitude || 0,
+      angle: v.angle || 0,
+      color: color,
+      locked: false // default unlocked; you can toggle this from UI
     });
 
-    this.colorIndex = vectors.length;
-    this.draw();
-    this.updateVectorInfo();
+    // create corresponding right vector in absolute screen/world coords
+    const startX = 150 + i * 30;
+    this.rightVectors.push({
+      start: { x: startX, y: baselineY },
+      end:   { x: startX + length * Math.sin(radians), y: baselineY - length * Math.cos(radians) },
+      color: color,
+      magnitude: v.magnitude || 0,
+      angle: v.angle || 0,
+      originalIndex: this.leftVectors.length - 1
+    });
+  });
+
+  // update color index so further additions pick next colors
+  this.colorIndex = (this.colorIndex + vectors.length) % this.colors.length;
+
+  // Show scenario box (if present in DOM)
+  const box = document.getElementById('scenarioBox');
+  if (box) {
+    const titleEl = document.getElementById('scenarioTitle');
+    const textEl  = document.getElementById('scenarioText');
+    if (titleEl) titleEl.textContent = entry.title || 'Scenario';
+    if (textEl)  textEl.textContent  = entry.description || '';
+    box.hidden = false;
   }
 
-  addVectorNumerically() {
-    const magnitudeInput = document.getElementById('magnitudeInput');
-    const angleInput = document.getElementById('angleInput');
-    const magnitude = parseFloat(magnitudeInput.value) || 50;
-    const angle = parseFloat(angleInput.value) || 0;
-    if (magnitude < 1 || magnitude > 200) { alert('Magnitude must be between 1 and 200 N'); return; }
+  // refresh UI & drawing
+  this.draw();
+  this.updateVectorInfo();
+}
 
-    const color = this.colors[this.colorIndex % this.colors.length];
-    this.colorIndex++;
-    const radians = angle * Math.PI / 180;
-    const length = magnitude * 3;
-
-    const leftRect = this.leftCanvas.getBoundingClientRect();
-    this.leftCenter = { x: leftRect.width / 2, y: leftRect.height / 2 };
-
-    const end = {
-      x: this.leftCenter.x + length * Math.sin(radians),
-      y: this.leftCenter.y - length * Math.cos(radians)
-    };
-
-    // push left vector as magnitude/angle
-const leftVector = { magnitude, angle, color, locked: false };
-this.leftVectors.push(leftVector);
-
-    const rightRect = this.rightCanvas.getBoundingClientRect();
-const baselineY = Math.max(80, rightRect.height - 50);
-const startX = 50 + this.rightVectors.length * 30;
-this.rightVectors.push({
-  start: { x: startX, y: baselineY },
-  end: { x: startX + length * Math.sin(radians), y: baselineY - length * Math.cos(radians) },
-  color, magnitude, angle, originalIndex: this.leftVectors.length - 1
-});
-
-    magnitudeInput.value = '';
-    angleInput.value = '';
-    this.draw();
-    this.updateVectorInfo();
-  }
-
-  updateVector(index) {
-    if (index < 0 || index >= this.leftVectors.length) return;
-    const magnitudeInput = document.getElementById(`mag_${index}`);
-    const angleInput = document.getElementById(`ang_${index}`);
-    const magnitude = parseFloat(magnitudeInput.value);
-    const angle = parseFloat(angleInput.value);
-    if (isNaN(magnitude) || magnitude < 1 || magnitude > 200) { alert('Magnitude must be between 1 and 200 N'); return; }
-    if (isNaN(angle)) { alert('Please enter a valid angle'); return; }
-
-    const radians = angle * Math.PI / 180;
-    const length = magnitude * 3;
-    this.leftVectors[index].magnitude = magnitude;
-this.leftVectors[index].angle = angle;
-// end will be computed in drawLeft() from leftCenter each frame
-
-
-    const rightIndex = this.rightVectors.findIndex(v => v.originalIndex === index);
-    if (rightIndex !== -1) {
-      const rv = this.rightVectors[rightIndex];
-      rv.magnitude = magnitude;
-      rv.angle = angle;
-      rv.end = { x: rv.start.x + length * Math.sin(radians), y: rv.start.y - length * Math.cos(radians) };
-    }
-
-    this.draw();
-    this.updateVectorInfo();
-  }
 
   deleteVector(index) {
     if (index < 0 || index >= this.leftVectors.length) return;
@@ -1393,21 +1380,46 @@ this.leftVectors[index].angle = angle;
   }
 
   clearAll() {
-    this.leftVectors = [];
-    this.rightVectors = [];
-    this.colorIndex = 0;
-    this.showComponents = false;
-    const compBtn = document.getElementById('componentsBtn');
-    if (compBtn) { compBtn.classList.remove('active'); compBtn.textContent = 'Show Components'; }
-    const mag = document.getElementById('magnitudeInput'); const ang = document.getElementById('angleInput');
-    if (mag) mag.value = ''; if (ang) ang.value = '';
-    this.draw();
-    this.updateVectorInfo();
-    this.animateResetView('left', 300); 
-    this.animateResetView('right', 300);
-    
-  }
+  this.leftVectors = [];
+  this.rightVectors = [];
+  this.colorIndex = 0;
+  this.showComponents = false;
+  const compBtn = document.getElementById('componentsBtn');
+  if (compBtn) { compBtn.classList.remove('active'); compBtn.textContent = 'Show Components'; }
+  const mag = document.getElementById('magnitudeInput'); const ang = document.getElementById('angleInput');
+  if (mag) mag.value = ''; if (ang) ang.value = '';
+
+  const box = document.getElementById('scenarioBox');
+  if (box) box.hidden = true;
+
+  // Also reset zoom if you want on clear:
+  this.animateResetView('left', 150);
+  this.animateResetView('right', 150);
+
+  this.draw();
+  this.updateVectorInfo();
 }
+
+}
+
+// script.js
+
+// Your existing functions
+function hideScenarioBox() {
+    const box = document.getElementById('scenarioBox');
+    if (box) {
+        box.hidden = true;
+        box.setAttribute('aria-hidden', 'true');
+    }
+}
+
+// Add this at the end of script.js
+document.addEventListener('DOMContentLoaded', () => {
+    const closeBtn = document.getElementById('scenarioCloseBtn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', hideScenarioBox);
+    }
+});
 
 // instantiate and expose
 const simulator = new VectorSimulator();
