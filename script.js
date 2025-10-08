@@ -47,12 +47,22 @@ class VectorSimulator {
     this.MAX_SCALE = 6;
 
     // Setup UI hooks
-    const btnIn = document.getElementById('zoomInBtn');
-    const btnOut = document.getElementById('zoomOutBtn');
-    const btnReset = document.getElementById('resetZoomBtn');
-    if (btnIn) btnIn.addEventListener('click', () => this.animateZoomTo('right', this.rightScale * this.ZOOM_STEP, 300));
-    if (btnOut) btnOut.addEventListener('click', () => this.animateZoomTo('right', this.rightScale / this.ZOOM_STEP, 300));
-    if (btnReset) btnReset.addEventListener('click', () => { this.animateResetView('left', 300); this.animateResetView('right', 300); });
+   // Setup UI hooks
+const btnIn = document.getElementById('zoomInBtn');
+const btnOut = document.getElementById('zoomOutBtn');
+const btnReset = document.getElementById('resetZoomBtn');
+if (btnIn) btnIn.addEventListener('click', () => {
+  this.animateZoomTo('left', this.leftScale * this.ZOOM_STEP, 300);
+  this.animateZoomTo('right', this.rightScale * this.ZOOM_STEP, 300);
+});
+if (btnOut) btnOut.addEventListener('click', () => {
+  this.animateZoomTo('left', this.leftScale / this.ZOOM_STEP, 300);
+  this.animateZoomTo('right', this.rightScale / this.ZOOM_STEP, 300);
+});
+if (btnReset) btnReset.addEventListener('click', () => { 
+  this.animateResetView('left', 300); 
+  this.animateResetView('right', 300); 
+});
 
     // Setup
     this.setupResponsiveCanvas();
