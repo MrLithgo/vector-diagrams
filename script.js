@@ -1,19 +1,4 @@
-/* script.js - Combined VectorSimulator with responsive canvases, editing, angles,
-   pinch-to-zoom, two-finger pan, wheel zoom, middle/space pan, and inertia.
-*/
-
 class VectorSimulator {
-    
-  toggleLock(index) {
-    if (index < 0 || index >= this.leftVectors.length) return;
-    const vec = this.leftVectors[index];
-    vec.locked = !vec.locked;
-    // Update UI text and redraw
-    this.updateVectorInfo();
-    this.draw();
-  }
- 
-
   constructor() {
     // DOM & contexts
     this.leftCanvas = document.getElementById('leftCanvas');
@@ -25,6 +10,7 @@ class VectorSimulator {
     this.leftVectors = [];
     this.rightVectors = [];
     this.showComponents = false;
+    this.showAngles = false; 
     this.colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c'];
     this.colorIndex = 0;
 
@@ -60,8 +46,7 @@ class VectorSimulator {
     this.MIN_SCALE = 0.25;
     this.MAX_SCALE = 6;
 
-    // Setup UI hooks (if buttons exist in DOM)
-    
+    // Setup UI hooks
     const btnIn = document.getElementById('zoomInBtn');
     const btnOut = document.getElementById('zoomOutBtn');
     const btnReset = document.getElementById('resetZoomBtn');
@@ -70,87 +55,79 @@ class VectorSimulator {
     if (btnReset) btnReset.addEventListener('click', () => { this.animateResetView('left', 300); this.animateResetView('right', 300); });
 
     // Setup
-    this.setupResponsiveCanvas(); // sizes canvases immediately
+    this.setupResponsiveCanvas();
     this.setupEventListeners();
     this.draw();
-    
   }
 
   /*******************
    * Responsive setup
    *******************/
   setupResponsiveCanvas() {
-    // call once to size canvases immediately
     this.resizeCanvases();
-
-    // debounce resize
     window.addEventListener('resize', () => {
       clearTimeout(this._resizeTimer);
       this._resizeTimer = setTimeout(() => this.resizeCanvases(), 120);
     });
   }
 
-  // Keep canvases same square size (based on smaller width)
   resizeCanvases() {
-  const leftRect = this.leftCanvas.getBoundingClientRect();
-  const rightRect = this.rightCanvas.getBoundingClientRect();
-  const MAX_CANVAS = 720;
-  const sharedWidth = Math.min(leftRect.width || MAX_CANVAS, rightRect.width || MAX_CANVAS, MAX_CANVAS);
-  const clientW = Math.max(120, Math.floor(sharedWidth));
-  const clientH = clientW;
+    const leftRect = this.leftCanvas.getBoundingClientRect();
+    const rightRect = this.rightCanvas.getBoundingClientRect();
+    const MAX_CANVAS = 720;
+    const sharedWidth = Math.min(leftRect.width || MAX_CANVAS, rightRect.width || MAX_CANVAS, MAX_CANVAS);
+    const clientW = Math.max(120, Math.floor(sharedWidth));
+    const clientH = clientW;
 
-  const dpr = window.devicePixelRatio || 1;
+    const dpr = window.devicePixelRatio || 1;
 
-  // store previous values for scaling if needed
-  const prevLeftW = this.leftClientW || leftRect.width || clientW;
-  const prevRightW = this.rightClientW || rightRect.width || clientW;
-  const scaleLeft = prevLeftW ? (clientW / prevLeftW) : 1;
-  const scaleRight = prevRightW ? (clientW / prevRightW) : 1;
+    // store previous values for scaling if needed
+    const prevLeftW = this.leftClientW || leftRect.width || clientW;
+    const prevRightW = this.rightClientW || rightRect.width || clientW;
+    const scaleLeft = prevLeftW ? (clientW / prevLeftW) : 1;
+    const scaleRight = prevRightW ? (clientW / prevRightW) : 1;
 
-  // apply to both canvases
-  const applySize = (canvas, ctx) => {
-    canvas.style.width = clientW + 'px';
-    canvas.style.height = clientH + 'px';
-    canvas.width = Math.max(1, Math.floor(clientW * dpr));
-    canvas.height = Math.max(1, Math.floor(clientH * dpr));
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  };
-  applySize(this.leftCanvas, this.leftCtx);
-  applySize(this.rightCanvas, this.rightCtx);
+    // apply to both canvases
+    const applySize = (canvas, ctx) => {
+      canvas.style.width = clientW + 'px';
+      canvas.style.height = clientH + 'px';
+      canvas.width = Math.max(1, Math.floor(clientW * dpr));
+      canvas.height = Math.max(1, Math.floor(clientH * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    applySize(this.leftCanvas, this.leftCtx);
+    applySize(this.rightCanvas, this.rightCtx);
 
-  // Update left vectors - only scale if they have start/end coordinates
-  // For magnitude/angle vectors, they will be recomputed in drawLeft()
-  this.leftVectors.forEach(v => {
-    // Only process vectors that have start/end coordinates (legacy vectors)
-    if (v.start && v.end) {
-      const prevLeftCenter = { x: prevLeftW / 2, y: prevLeftW / 2 };
-      if (Math.abs(v.start.x - prevLeftCenter.x) < 3 && Math.abs(v.start.y - prevLeftCenter.y) < 3) {
-        const newLeftCenter = { x: clientW / 2, y: clientH / 2 };
-        v.start = { ...newLeftCenter };
-        const radians = (v.angle || 0) * Math.PI / 180;
-        const length = (v.magnitude || 0) * 3;
-        v.end = { x: v.start.x + length * Math.sin(radians), y: v.start.y - length * Math.cos(radians) };
-      } else {
-        v.start.x *= scaleLeft; v.start.y *= scaleLeft;
-        v.end.x   *= scaleLeft; v.end.y   *= scaleLeft;
+    // Update left vectors
+    this.leftVectors.forEach(v => {
+      if (v.start && v.end) {
+        const prevLeftCenter = { x: prevLeftW / 2, y: prevLeftW / 2 };
+        if (Math.abs(v.start.x - prevLeftCenter.x) < 3 && Math.abs(v.start.y - prevLeftCenter.y) < 3) {
+          const newLeftCenter = { x: clientW / 2, y: clientH / 2 };
+          v.start = { ...newLeftCenter };
+          const radians = (v.angle || 0) * Math.PI / 180;
+          const length = (v.magnitude || 0) * 3;
+          v.end = { x: v.start.x + length * Math.sin(radians), y: v.start.y - length * Math.cos(radians) };
+        } else {
+          v.start.x *= scaleLeft; v.start.y *= scaleLeft;
+          v.end.x   *= scaleLeft; v.end.y   *= scaleLeft;
+        }
       }
-    }
-    // For magnitude/angle vectors, no scaling needed - they'll be positioned relative to center in drawLeft()
-  });
+    });
 
-  // Scale right vectors (they always have start/end coordinates)
-  this.rightVectors.forEach(v => {
-    v.start.x *= scaleRight; v.start.y *= scaleRight;
-    v.end.x   *= scaleRight; v.end.y   *= scaleRight;
-  });
+    // Scale right vectors
+    this.rightVectors.forEach(v => {
+      v.start.x *= scaleRight; v.start.y *= scaleRight;
+      v.end.x   *= scaleRight; v.end.y   *= scaleRight;
+    });
 
-  // update cached sizes and leftCenter
-  this.leftClientW = clientW; this.leftClientH = clientH;
-  this.rightClientW = clientW; this.rightClientH = clientH;
-  this.leftCenter = { x: clientW / 2, y: clientH / 2 };
+    // update cached sizes and leftCenter
+    this.leftClientW = clientW; this.leftClientH = clientH;
+    this.rightClientW = clientW; this.rightClientH = clientH;
+    this.leftCenter = { x: clientW / 2, y: clientH / 2 };
 
-  this.draw();
-}
+    this.draw();
+  }
 
   /************************
    * Event listeners setup
@@ -177,9 +154,8 @@ class VectorSimulator {
     });
 
     // Wheel -> zoom (Ctrl/Cmd + wheel)
-   // replace previous wheel bindings with these
-this.leftCanvas.addEventListener('wheel', (e) => this.handleWheel(e, this.leftCanvas), { passive: false });
-this.rightCanvas.addEventListener('wheel', (e) => this.handleWheel(e, this.rightCanvas), { passive: false });
+    this.leftCanvas.addEventListener('wheel', (e) => this.handleWheel(e, this.leftCanvas), { passive: false });
+    this.rightCanvas.addEventListener('wheel', (e) => this.handleWheel(e, this.rightCanvas), { passive: false });
 
     // Pan by middle-button or space + drag (mouse)
     [this.leftCanvas, this.rightCanvas].forEach(c => {
@@ -201,8 +177,6 @@ this.rightCanvas.addEventListener('wheel', (e) => this.handleWheel(e, this.right
 
   /*********************
    * Pointer helpers
-   *
-   * NOTE: getPointerPos now returns world coordinates (inverse of current scale+offset)
    *********************/
   getPointerPos(canvas, e) {
     const rect = canvas.getBoundingClientRect();
@@ -250,130 +224,120 @@ this.rightCanvas.addEventListener('wheel', (e) => this.handleWheel(e, this.right
    * Left canvas interactions
    **************************/
   handleLeftPointerDown(e) {
-  e.preventDefault();
+    e.preventDefault();
 
-  // Recompute leftCenter in world coordinates (use current rect, scale & offset)
-  const rect = this.leftCanvas.getBoundingClientRect();
-  const cssW = rect.width;
-  const cssH = rect.height;
-  // world center = (cssCenter - offset) / scale
-  this.leftCenter = {
-    x: (cssW / 2 - (this.leftOffset?.x || 0)) / (this.leftScale || 1),
-    y: (cssH / 2 - (this.leftOffset?.y || 0)) / (this.leftScale || 1)
-  };
+    // Recompute leftCenter in world coordinates
+    const rect = this.leftCanvas.getBoundingClientRect();
+    const cssW = rect.width;
+    const cssH = rect.height;
+    this.leftCenter = {
+      x: (cssW / 2 - (this.leftOffset?.x || 0)) / (this.leftScale || 1),
+      y: (cssH / 2 - (this.leftOffset?.y || 0)) / (this.leftScale || 1)
+    };
 
-  const pos = this.getPointerPos(this.leftCanvas, e); // returns world coords
-  const distance = this.distance(pos, this.leftCenter);
+    const pos = this.getPointerPos(this.leftCanvas, e);
+    const distance = this.distance(pos, this.leftCenter);
 
-  if (distance < 20) {
-    this.isDrawing = true;
-    // store startPos in world coords (freshly computed)
-    this.startPos = { ...this.leftCenter };
-    try { this.leftCanvas.setPointerCapture(e.pointerId); } catch (err) {}
+    if (distance < 20) {
+      this.isDrawing = true;
+      this.startPos = { ...this.leftCenter };
+      try { this.leftCanvas.setPointerCapture(e.pointerId); } catch (err) {}
+    }
   }
-}
 
+  handleLeftPointerMove(e) {
+    if (!this.isDrawing) return;
+    e.preventDefault();
 
- handleLeftPointerMove(e) {
-  if (!this.isDrawing) return;
-  e.preventDefault();
+    const pos = this.getPointerPos(this.leftCanvas, e);
+    const dx = pos.x - this.startPos.x;
+    const dy = pos.y - this.startPos.y;
+    const rawMagnitude = Math.sqrt(dx*dx + dy*dy);
+    const rawAngle = Math.atan2(dx, -dy) * 180 / Math.PI;
 
-  // pointer pos in world coords
-  const pos = this.getPointerPos(this.leftCanvas, e);
+    // snapping
+    const snappedMagnitude = Math.round(rawMagnitude / 0.3) * 0.3;
+    const snappedAngle = Math.round(rawAngle * 10) / 10;
+    const snappedRadians = snappedAngle * Math.PI / 180;
 
-  const dx = pos.x - this.startPos.x;
-  const dy = pos.y - this.startPos.y;
-  const rawMagnitude = Math.sqrt(dx*dx + dy*dy);
-  const rawAngle = Math.atan2(dx, -dy) * 180 / Math.PI; // top=0°, clockwise
+    const snappedPos = {
+      x: this.startPos.x + snappedMagnitude * Math.sin(snappedRadians),
+      y: this.startPos.y - snappedMagnitude * Math.cos(snappedRadians)
+    };
 
-  // snapping - maintain the same scale (world units)
-  const snappedMagnitude = Math.round(rawMagnitude / 3) * 3;
-  const snappedAngle = Math.round(rawAngle);
-  const snappedRadians = snappedAngle * Math.PI / 180;
-
-  // compute snappedPos in world coords (relative to the current startPos/world center)
-  const snappedPos = {
-    x: this.startPos.x + snappedMagnitude * Math.sin(snappedRadians),
-    y: this.startPos.y - snappedMagnitude * Math.cos(snappedRadians)
-  };
-
-  // redraw preview - FIRST redraw the entire left canvas
-  this.drawLeft();
-  
-  // THEN draw the preview vector on top, making sure to use the current transform
-  this.leftCtx.save();
-  const dpr = window.devicePixelRatio || 1;
-  this.leftCtx.setTransform(dpr * this.leftScale, 0, 0, dpr * this.leftScale, 
-                           this.leftOffset.x * dpr, this.leftOffset.y * dpr);
-  
-  this.drawVector(this.leftCtx, this.startPos, snappedPos, '#3498db', 2, true);
-  this.drawAngleIndicator(this.leftCtx, this.startPos, snappedPos);
-  
-  this.leftCtx.restore();
-}
+    // redraw preview
+    this.drawLeft();
+    
+    this.leftCtx.save();
+    const dpr = window.devicePixelRatio || 1;
+    this.leftCtx.setTransform(dpr * this.leftScale, 0, 0, dpr * this.leftScale, 
+                             this.leftOffset.x * dpr, this.leftOffset.y * dpr);
+    
+    this.drawVector(this.leftCtx, this.startPos, snappedPos, '#3498db', 2, true);
+    this.drawAngleIndicator(this.leftCtx, this.startPos, snappedPos);
+    
+    this.leftCtx.restore();
+  }
 
   handleLeftPointerUp(e) {
-    // --- inside handleLeftPointerUp ---
-if (!this.isDrawing) return;
-e.preventDefault();
+    if (!this.isDrawing) return;
+    e.preventDefault();
 
-const pos = this.getPointerPos(this.leftCanvas, e); // world coords
-const dx = pos.x - this.startPos.x;
-const dy = pos.y - this.startPos.y;
-const rawMagnitude = Math.sqrt(dx*dx + dy*dy);
+    const pos = this.getPointerPos(this.leftCanvas, e);
+    const dx = pos.x - this.startPos.x;
+    const dy = pos.y - this.startPos.y;
+    const rawMagnitude = Math.sqrt(dx*dx + dy*dy);
 
-if (rawMagnitude > 20) {
-  const rawAngle = Math.atan2(dx, -dy) * 180 / Math.PI;
-  const snappedMagnitude = Math.round(rawMagnitude / 3);
-  const snappedAngle = Math.round(rawAngle);
-  const snappedRadians = snappedAngle * Math.PI / 180;
+    if (rawMagnitude > 20) {
+      const rawAngle = Math.atan2(dx, -dy) * 180 / Math.PI;
+      const snappedMagnitude = Math.round(rawMagnitude / 0.3)/10;
+      const snappedAngle = Math.round(rawAngle * 10) / 10;
+      const snappedRadians = snappedAngle * Math.PI / 180;
 
-  const snappedPos = {
-    x: this.startPos.x + snappedMagnitude * 3 * Math.sin(snappedRadians),
-    y: this.startPos.y - snappedMagnitude * 3 * Math.cos(snappedRadians)
-  };
+      const snappedPos = {
+        x: this.startPos.x + snappedMagnitude * 3 * Math.sin(snappedRadians),
+        y: this.startPos.y - snappedMagnitude * 3 * Math.cos(snappedRadians)
+      };
 
-  const color = this.colors[this.colorIndex % this.colors.length];
-  this.colorIndex++;
+      const color = this.colors[this.colorIndex % this.colors.length];
+      this.colorIndex++;
 
-  // store left vector as magnitude/angle (so it stays attached to dynamic center)
-  const leftVector = {
-    magnitude: snappedMagnitude,
-    angle: snappedAngle,
-    color: color
-  };
-  this.leftVectors.push(leftVector);
+      // store left vector as magnitude/angle
+      const leftVector = {
+        magnitude: snappedMagnitude,
+        angle: snappedAngle,
+        color: color
+      };
+      this.leftVectors.push(leftVector);
 
-  // create corresponding absolute right vector (same as before)
-  const rightRect = this.rightCanvas.getBoundingClientRect();
-  const baselineY = rightRect.height / 2;
-  const startX = 150 + this.rightVectors.length * 30;
-  const dxR = snappedPos.x - this.startPos.x;
-  const dyR = snappedPos.y - this.startPos.y;
+      // create corresponding absolute right vector
+      const rightRect = this.rightCanvas.getBoundingClientRect();
+      const baselineY = rightRect.height / 2;
+      const startX = 150 + this.rightVectors.length * 30;
+     
 
-  this.rightVectors.push({
-    start: { x: startX, y: baselineY },
-    end: { x: startX + dxR, y: baselineY + dyR },
-    color: color,
-    magnitude: snappedMagnitude,
-    angle: snappedAngle,
-    originalIndex: this.leftVectors.length - 1
-  });
+     this.rightVectors.push({
+      start: { x: startX, y: baselineY },
+      end: { 
+        x: startX + snappedMagnitude * 3 * Math.sin(snappedRadians), 
+        y: baselineY - snappedMagnitude * 3 * Math.cos(snappedRadians) 
+      },
+      color: color,
+      magnitude: snappedMagnitude, // FIXED: Use same decimal magnitude
+      angle: snappedAngle, // FIXED: Use same decimal angle
+      originalIndex: this.leftVectors.length - 1
+      });
 
-  this.updateVectorInfo();
-}
+      this.updateVectorInfo();
+    }
 
-this.isDrawing = false;
-try { this.leftCanvas.releasePointerCapture(e.pointerId); } catch (err) {}
-this.draw();
+    this.isDrawing = false;
+    try { this.leftCanvas.releasePointerCapture(e.pointerId); } catch (err) {}
+    this.draw();
   }
 
   /**************************
    * Right canvas interactions
-   *
-   * Modes:
-   *  - move whole vector (dragging)  [if pointer near body/start]
-   *  - editEnd (drag arrow head)     [if pointer near end]
    **************************/
   handleRightPointerDown(e) {
     e.preventDefault();
@@ -406,11 +370,10 @@ this.draw();
     }
   }
 
-    handleRightPointerMove(e) {
+  handleRightPointerMove(e) {
     if (this.dragging === null) return;
     e.preventDefault();
 
-    // pointer pos in world coords on right canvas
     const pos = this.getPointerPos(this.rightCanvas, e);
     const index = this.dragging;
     const vector = this.rightVectors[index];
@@ -422,50 +385,36 @@ this.draw();
       vector.start = { x: pos.x - this.dragOffset.x, y: pos.y - this.dragOffset.y };
       vector.end = { x: vector.start.x + dx, y: vector.start.y + dy };
 
-      // move only in right panel; left vector magnitude & angle remain unchanged in "move" mode
       this.drawRight();
       this.updateResultant();
       return;
     }
 
     if (this.draggingMode === 'editEnd') {
-      // If this right vector maps to a left vector, check lock
       const leftIndex = typeof vector.originalIndex === 'number' ? vector.originalIndex : -1;
       const linkedLeft = (leftIndex >= 0 && this.leftVectors[leftIndex]) ? this.leftVectors[leftIndex] : null;
 
       if (linkedLeft && linkedLeft.locked) {
-        // When locked: user can change magnitude only. We enforce the end point to lie along the locked angle.
-        // Compute direction vector from locked angle (world units) and set end based on new length measured by pointer projection.
-        // First, compute the locked angle in radians (same angle convention as rest of the app)
         const lockedAngle = (linkedLeft.angle || 0) * Math.PI / 180;
-        // direction unit in world coordinates (dx_world, dy_world) according to angle convention (0° = up, clockwise)
         const dir = { x: Math.sin(lockedAngle), y: -Math.cos(lockedAngle) };
 
-        // Project pointer onto the ray starting at vector.start along dir to get new length
         const relX = pos.x - vector.start.x;
         const relY = pos.y - vector.start.y;
-        const projectedLength = relX * dir.x + relY * dir.y; // scalar projection onto dir
-
-        // limit projectedLength to avoid negative lengths (you can allow negative if you like)
+        const projectedLength = relX * dir.x + relY * dir.y;
         const clampedProj = Math.max(0, projectedLength);
 
-        // new end computed along the locked direction
         vector.end = {
           x: vector.start.x + dir.x * clampedProj,
           y: vector.start.y + dir.y * clampedProj
         };
 
-        // recalc magnitude & update left mapping (magnitude = length/3)
         const len = Math.hypot(vector.end.x - vector.start.x, vector.end.y - vector.start.y);
-        const magnitude = Math.round(len / 3);
+        const magnitude = Math.round(len / 0.3)/10;
 
         vector.magnitude = magnitude;
-        // angle remains unchanged for both vector and left linked
         vector.angle = linkedLeft.angle;
 
         linkedLeft.magnitude = magnitude;
-        // keep linkedLeft.angle as-is (locked)
-        // recompute left vector end will happen in drawLeft from magnitude/angle
 
         this.draw();
         this.updateVectorInfo();
@@ -473,26 +422,23 @@ this.draw();
         return;
       }
 
-      // Not locked: normal edit behaviour (change angle & magnitude according to pointer)
       vector.end = { x: pos.x, y: pos.y };
 
-      const dx = vector.end.x - vector.start.x;
-      const dy = vector.end.y - vector.start.y;
-      const length = Math.sqrt(dx*dx + dy*dy);
-      const magnitude = Math.round(length / 3);
-      const angle = Math.atan2(dx, -dy) * 180 / Math.PI; // top=0° clockwise
+  const dx = vector.end.x - vector.start.x;
+  const dy = vector.end.y - vector.start.y;
+  const length = Math.sqrt(dx*dx + dy*dy);
+  const magnitude = Math.round(length / 0.3) / 10; // FIXED: Use 0.1 precision
+  const angle = Math.round(Math.atan2(dx, -dy) * 180 / Math.PI * 10) / 10; // FIXED: Use 0.1 precision
 
-      vector.magnitude = magnitude;
-      vector.angle = angle;
+  vector.magnitude = magnitude;
+  vector.angle = angle;
 
-      // update linked left vector (if mapped)
       if (leftIndex >= 0 && this.leftVectors[leftIndex]) {
         const leftVec = this.leftVectors[leftIndex];
         leftVec.magnitude = magnitude;
         leftVec.angle = angle;
         const radians = angle * Math.PI / 180;
         const leftLength = magnitude * 3;
-        // leftVec.end will be computed in drawLeft() from leftCenter each frame
         leftVec.end = {
           x: this.leftCenter.x + leftLength * Math.sin(radians),
           y: this.leftCenter.y - leftLength * Math.cos(radians)
@@ -505,7 +451,6 @@ this.draw();
       return;
     }
   }
-
 
   handleRightPointerUp(e) {
     if (this.dragging !== null) {
@@ -520,10 +465,8 @@ this.draw();
    * Pointer-tracking + pinch/pan (touch)
    *********************/
   handlePointerTrackDown(e, canvas) {
-    // record pointer
     this._pointers[e.pointerId] = { id: e.pointerId, x: e.clientX, y: e.clientY, canvas, prevX: e.clientX, prevY: e.clientY, time: performance.now() };
 
-    // if two pointers on same canvas -> start pinch/pan tracking
     const pts = Object.values(this._pointers).filter(p => p.canvas === canvas);
     if (pts.length === 2) {
       const a = pts[0], b = pts[1];
@@ -547,7 +490,6 @@ this.draw();
         lastMoveVx: 0,
         lastMoveVy: 0
       };
-      // stop any running pan inertia
       this._panInertia.active = false;
     }
   }
@@ -558,7 +500,6 @@ this.draw();
     const now = performance.now();
     p.x = e.clientX; p.y = e.clientY; p.time = now;
 
-    // if pinch active and same canvas -> handle pinch+two-finger-pan
     if (this._pinch && this._pinch.canvas === canvas) {
       const pts = Object.values(this._pointers).filter(q => q.canvas === canvas);
       if (pts.length < 2) return;
@@ -596,15 +537,11 @@ this.draw();
       this.draw();
       return;
     }
-
-    // single-finger movement: keep for editing (do not pan for single finger)
-    // we intentionally do not pan here to preserve editing behaviour
   }
 
   handlePointerTrackUp(e, canvas) {
     delete this._pointers[e.pointerId];
 
-    // if pinch ended on this canvas -> start inertia from last recorded velocity
     if (this._pinch && this._pinch.canvas === canvas) {
       const vx = (this._pinch.lastMoveVx || 0) * 1000;
       const vy = (this._pinch.lastMoveVy || 0) * 1000;
@@ -620,50 +557,40 @@ this.draw();
   /*********************
    * Wheel & mouse pan handlers
    *********************/
- handleWheel(e, canvas) {
-  // ensure we can prevent scrolling
-  e.preventDefault();
+  handleWheel(e, canvas) {
+    e.preventDefault();
 
-  // find which canvas and its transform state
-  const isLeft = (canvas === this.leftCanvas);
-  const prevScale = isLeft ? this.leftScale : this.rightScale;
-  const offset = isLeft ? this.leftOffset : this.rightOffset;
+    const isLeft = (canvas === this.leftCanvas);
+    const prevScale = isLeft ? this.leftScale : this.rightScale;
+    const offset = isLeft ? this.leftOffset : this.rightOffset;
 
-  // canvas-local CSS coords of mouse
-  const rect = canvas.getBoundingClientRect();
-  const cssX = e.clientX - rect.left;
-  const cssY = e.clientY - rect.top;
+    const rect = canvas.getBoundingClientRect();
+    const cssX = e.clientX - rect.left;
+    const cssY = e.clientY - rect.top;
 
-  // smooth zoom factor (wheel delta -> exponential)
-  const zoomFactor = Math.exp(-e.deltaY * 0.0012); // smaller multiplier => slower zoom
-  let newScale = prevScale * zoomFactor;
+    const zoomFactor = Math.exp(-e.deltaY * 0.0012);
+    let newScale = prevScale * zoomFactor;
 
-  // clamp
-  newScale = Math.max(this.MIN_SCALE, Math.min(this.MAX_SCALE, newScale));
+    newScale = Math.max(this.MIN_SCALE, Math.min(this.MAX_SCALE, newScale));
 
-  // world position under cursor before zoom
-  const worldX = (cssX - offset.x) / prevScale;
-  const worldY = (cssY - offset.y) / prevScale;
+    const worldX = (cssX - offset.x) / prevScale;
+    const worldY = (cssY - offset.y) / prevScale;
 
-  // apply new scale and recompute offset so the same world point remains under cursor
-  const newOffsetX = cssX - worldX * newScale;
-  const newOffsetY = cssY - worldY * newScale;
+    const newOffsetX = cssX - worldX * newScale;
+    const newOffsetY = cssY - worldY * newScale;
 
-  if (isLeft) {
-    this.leftScale = newScale;
-    this.leftOffset = { x: newOffsetX, y: newOffsetY };
-  } else {
-    this.rightScale = newScale;
-    this.rightOffset = { x: newOffsetX, y: newOffsetY };
+    if (isLeft) {
+      this.leftScale = newScale;
+      this.leftOffset = { x: newOffsetX, y: newOffsetY };
+    } else {
+      this.rightScale = newScale;
+      this.rightOffset = { x: newOffsetX, y: newOffsetY };
+    }
+
+    this.draw();
   }
 
-  // redraw
-  this.draw();
-}
-
-
   handlePanPointerDown(e, canvas) {
-    // start panning if middle button OR (spacebar + left button)
     if (e.button === 1 || (this.spaceKeyDown && e.button === 0)) {
       this.isPanning = true;
       this.panTarget = (canvas === this.leftCanvas) ? 'left' : 'right';
@@ -770,12 +697,8 @@ this.draw();
   /*********************
    * Drawing utilities
    *********************/
-  /**
-   * Draw small internal angle arcs & labels for a tip-to-tail chain (triangle)
-   * Expects rightVectors arranged in order (tip-to-tail).
-   * Call this after drawing vectors & connection lines in drawRight().
-   */
   drawTriangleAngles(ctx) {
+     if (!this.showAngles) return;
     if (!this.rightVectors || this.rightVectors.length < 2) return;
 
     const verts = [];
@@ -865,58 +788,59 @@ this.draw();
     }
   }
 
- drawVector(ctx, start, end, color, width = 2, temporary = false, isResultant = false) {
-  const dx = end.x - start.x;
-  const dy = end.y - start.y;
-  const length = Math.sqrt(dx*dx + dy*dy);
-  if (length < 1) return;
-
-  const angle = Math.atan2(dy, dx);
-  const arrowLength = isResultant ? 15 : 12;
-  const arrowAngle = Math.PI / 6;
-  
-  // Calculate the actual end point for the shaft (shortened by arrow length)
-  const shaftEnd = {
-    x: end.x - arrowLength * Math.cos(angle),
-    y: end.y - arrowLength * Math.sin(angle)
-  };
-
-  ctx.strokeStyle = color;
-  ctx.fillStyle = color;
-  ctx.lineWidth = width;
-  if (isResultant) ctx.setLineDash([8, 4]); else ctx.setLineDash([]);
-
-  // Draw the shaft to the shortened end point
-  ctx.beginPath();
-  ctx.moveTo(start.x, start.y);
-  ctx.lineTo(shaftEnd.x, shaftEnd.y);
-  ctx.stroke();
-
-  ctx.setLineDash([]);
-
-  // Draw arrow head at the original end point (full length)
-  ctx.beginPath();
-  ctx.moveTo(end.x, end.y);
-  ctx.lineTo(end.x - arrowLength * Math.cos(angle - arrowAngle), end.y - arrowLength * Math.sin(angle - arrowAngle));
-  ctx.lineTo(end.x - arrowLength * Math.cos(angle + arrowAngle), end.y - arrowLength * Math.sin(angle + arrowAngle));
-  ctx.closePath();
-  ctx.fill();
-
-  if (!temporary) {
-    const magnitude = Math.round(length / 3);
-    const midX = (start.x + end.x) / 2; // Use full length midpoint for label
-    const midY = (start.y + end.y) / 2;
-    ctx.fillStyle = color;
-    ctx.font = isResultant ? 'bold 12px Arial' : 'bold 11px Arial';
-    const label = isResultant ? `R=${magnitude}N` : `${magnitude}N`;
-    ctx.fillText(label, midX + 8, midY - 8);
-  }
-}
-
-  drawAngleIndicator(ctx, start, end) {
+  drawVector(ctx, start, end, color, width = 2, temporary = false, isResultant = false) {
     const dx = end.x - start.x;
     const dy = end.y - start.y;
-    const angle = Math.atan2(dx, -dy) * 180 / Math.PI; // top=0° clockwise
+    const length = Math.sqrt(dx*dx + dy*dy);
+    if (length < 1) return;
+
+    const angle = Math.atan2(dy, dx);
+    const arrowLength = isResultant ? 15 : 12;
+    const arrowAngle = Math.PI / 6;
+    
+    // Calculate the actual end point for the shaft (shortened by arrow length)
+    const shaftEnd = {
+      x: end.x - arrowLength * Math.cos(angle),
+      y: end.y - arrowLength * Math.sin(angle)
+    };
+
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = width;
+    if (isResultant) ctx.setLineDash([8, 4]); else ctx.setLineDash([]);
+
+    // Draw the shaft to the shortened end point
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(shaftEnd.x, shaftEnd.y);
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+
+    // Draw arrow head at the original end point (full length)
+    ctx.beginPath();
+    ctx.moveTo(end.x, end.y);
+    ctx.lineTo(end.x - arrowLength * Math.cos(angle - arrowAngle), end.y - arrowLength * Math.sin(angle - arrowAngle));
+    ctx.lineTo(end.x - arrowLength * Math.cos(angle + arrowAngle), end.y - arrowLength * Math.sin(angle + arrowAngle));
+    ctx.closePath();
+    ctx.fill();
+
+    if (!temporary) {
+      const magnitude = length / 3;
+      const midX = (start.x + end.x) / 2;
+      const midY = (start.y + end.y) / 2;
+      ctx.fillStyle = color;
+      ctx.font = isResultant ? 'bold 12px Arial' : 'bold 11px Arial';
+       const label = isResultant ? `R=${magnitude.toFixed(1)}N` : `${magnitude.toFixed(1)}N`; 
+      ctx.fillText(label, midX + 8, midY - 8);
+    }
+  }
+
+  drawAngleIndicator(ctx, start, end) {
+     if (!this.showAngles) return;
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const angle = Math.atan2(dx, -dy) * 180 / Math.PI;
     const magnitude = Math.sqrt(dx*dx + dy*dy) / 3;
 
     ctx.strokeStyle = '#7f8c8d';
@@ -929,99 +853,98 @@ this.draw();
 
     ctx.fillStyle = '#2c3e50';
     ctx.font = 'bold 12px Arial';
-    ctx.fillText(`${angle.toFixed(0)}°`, start.x + 35, start.y - 5);
-    ctx.fillText(`${magnitude.toFixed(0)}N`, start.x + 35, start.y + 15);
+    ctx.fillText(`${angle.toFixed(1)}°`, start.x + 35, start.y - 5);
+    ctx.fillText(`${magnitude.toFixed(1)}N`, start.x + 35, start.y + 15);
   }
 
-  drawComponents(ctx, vector) {
-    const dx = vector.end.x - vector.start.x;
-    const dy = vector.end.y - vector.start.y;
+ drawComponents(ctx, vector) {
+  const dx = vector.end.x - vector.start.x;
+  const dy = vector.end.y - vector.start.y;
 
-    ctx.strokeStyle = vector.color;
-    ctx.setLineDash([3, 3]);
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(vector.start.x, vector.start.y);
-    ctx.lineTo(vector.start.x + dx, vector.start.y);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(vector.start.x + dx, vector.start.y);
-    ctx.lineTo(vector.start.x + dx, vector.start.y + dy);
-    ctx.stroke();
-    ctx.setLineDash([]);
+  ctx.strokeStyle = vector.color;
+  ctx.setLineDash([3, 3]);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(vector.start.x, vector.start.y);
+  ctx.lineTo(vector.start.x + dx, vector.start.y);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(vector.start.x + dx, vector.start.y);
+  ctx.lineTo(vector.start.x + dx, vector.start.y + dy);
+  ctx.stroke();
+  ctx.setLineDash([]);
 
-    ctx.fillStyle = vector.color;
-    ctx.font = '10px Arial';
-    const hComp = (dx / 3).toFixed(1);
-    const vComp = (-dy / 3).toFixed(1);
-    ctx.fillText(`${hComp}N`, vector.start.x + dx/2, vector.start.y - 5);
-    ctx.fillText(`${vComp}N`, vector.start.x + dx + 5, vector.start.y + dy/2);
-  }
-
+  ctx.fillStyle = vector.color;
+  ctx.font = '10px Arial';
+  
+  // FIX: Use the same calculation as right panel (divide by 3 for N units)
+  const hComp = (dx / 3).toFixed(1);
+  const vComp = (dy / 3).toFixed(1); // Keep sign consistent
+  
+  ctx.fillText(`${hComp}N`, vector.start.x + dx/2, vector.start.y - 5);
+  ctx.fillText(`${vComp}N`, vector.start.x + dx + 5, vector.start.y + dy/2);
+}
+  
   drawLeft() {
-  const rect = this.leftCanvas.getBoundingClientRect();
-  const cssW = rect.width;
-  const cssH = rect.height;
-  const dpr = window.devicePixelRatio || 1;
-  const pixW = this.leftCanvas.width;
-  const pixH = this.leftCanvas.height;
+    const rect = this.leftCanvas.getBoundingClientRect();
+    const cssW = rect.width;
+    const cssH = rect.height;
+    const dpr = window.devicePixelRatio || 1;
+    const pixW = this.leftCanvas.width;
+    const pixH = this.leftCanvas.height;
 
-  // Clear backing store
-  this.leftCtx.save();
-  this.leftCtx.setTransform(1,0,0,1,0,0);
-  this.leftCtx.clearRect(0,0,pixW,pixH);
-  this.leftCtx.restore();
+    // Clear backing store
+    this.leftCtx.save();
+    this.leftCtx.setTransform(1,0,0,1,0,0);
+    this.leftCtx.clearRect(0,0,pixW,pixH);
+    this.leftCtx.restore();
 
-  // Apply world transform
-  this.leftCtx.save();
-  this.leftCtx.setTransform(dpr * this.leftScale, 0, 0, dpr * this.leftScale, this.leftOffset.x * dpr, this.leftOffset.y * dpr);
+    // Apply world transform
+    this.leftCtx.save();
+    this.leftCtx.setTransform(dpr * this.leftScale, 0, 0, dpr * this.leftScale, this.leftOffset.x * dpr, this.leftOffset.y * dpr);
 
-  // draw grid (world coords)
-  this.drawGrid(this.leftCtx, this.leftScale);
+    // draw grid (world coords)
+    this.drawGrid(this.leftCtx, this.leftScale);
 
-  // recompute leftCenter in world coords
-  this.leftCenter = {
-    x: (cssW / 2 - this.leftOffset.x) / (this.leftScale || 1),
-    y: (cssH / 2 - this.leftOffset.y) / (this.leftScale || 1)
-  };
-
-  // draw center
-  this.leftCtx.fillStyle = '#2c3e50';
-  this.leftCtx.beginPath();
-  this.leftCtx.arc(this.leftCenter.x, this.leftCenter.y, 8, 0, Math.PI * 2);
-  this.leftCtx.fill();
-
-  this.leftCtx.fillStyle = '#2c3e50';
-  this.leftCtx.font = '12px Arial';
-  this.leftCtx.fillText('Object', this.leftCenter.x - 20, this.leftCenter.y + 25);
-
-  // draw vectors — compute start = leftCenter each frame
-  this.leftVectors.forEach((vec, index) => {
-    // Backwards-compatibility: if vector already stored with absolute start/end, convert on the fly
-    if (vec.start && vec.end && (typeof vec.magnitude === 'undefined' || typeof vec.angle === 'undefined')) {
-      const dx = vec.end.x - vec.start.x;
-      const dy = vec.end.y - vec.start.y;
-      vec.magnitude = Math.round(Math.sqrt(dx*dx + dy*dy) / 3);
-      vec.angle = Math.atan2(dx, -dy) * 180 / Math.PI;
-    }
-
-    // compute start & end from magnitude & angle
-    const start = { x: this.leftCenter.x, y: this.leftCenter.y };
-    const radians = (vec.angle || 0) * Math.PI / 180;
-    const length = (vec.magnitude || 0) * 3;
-    const end = {
-      x: start.x + length * Math.sin(radians),
-      y: start.y - length * Math.cos(radians)
+    // recompute leftCenter in world coords
+    this.leftCenter = {
+      x: (cssW / 2 - this.leftOffset.x) / (this.leftScale || 1),
+      y: (cssH / 2 - this.leftOffset.y) / (this.leftScale || 1)
     };
 
-    // draw
-    this.drawVector(this.leftCtx, start, end, vec.color, 3);
-    if (this.showComponents) this.drawComponents(this.leftCtx, { start, end, color: vec.color });
-  });
+    // draw center
+    this.leftCtx.fillStyle = '#2c3e50';
+    this.leftCtx.beginPath();
+    this.leftCtx.arc(this.leftCenter.x, this.leftCenter.y, 8, 0, Math.PI * 2);
+    this.leftCtx.fill();
 
-  this.leftCtx.restore();
-}
+    this.leftCtx.fillStyle = '#2c3e50';
+    this.leftCtx.font = '12px Arial';
+    this.leftCtx.fillText('Object', this.leftCenter.x - 20, this.leftCenter.y + 25);
 
+    // draw vectors
+    this.leftVectors.forEach((vec, index) => {
+      if (vec.start && vec.end && (typeof vec.magnitude === 'undefined' || typeof vec.angle === 'undefined')) {
+        const dx = vec.end.x - vec.start.x;
+        const dy = vec.end.y - vec.start.y;
+        vec.magnitude = Math.round(Math.sqrt(dx*dx + dy*dy) / 3);
+        vec.angle = Math.atan2(dx, -dy) * 180 / Math.PI;
+      }
+
+      const start = { x: this.leftCenter.x, y: this.leftCenter.y };
+      const radians = (vec.angle || 0) * Math.PI / 180;
+      const length = (vec.magnitude || 0) * 3;
+      const end = {
+        x: start.x + length * Math.sin(radians),
+        y: start.y - length * Math.cos(radians)
+      };
+
+      this.drawVector(this.leftCtx, start, end, vec.color, 3);
+      if (this.showComponents) this.drawComponents(this.leftCtx, { start, end, color: vec.color });
+    });
+
+    this.leftCtx.restore();
+  }
 
   drawRight() {
     const rw = this.rightClientW || this.rightCanvas.getBoundingClientRect().width;
@@ -1032,9 +955,7 @@ this.draw();
     const dpr = window.devicePixelRatio || 1;
     this.rightCtx.setTransform(dpr * this.rightScale, 0, 0, dpr * this.rightScale, this.rightOffset.x * dpr, this.rightOffset.y * dpr);
 
-    // draw grid in world coords
-    this.rightCtx.setTransform(dpr * this.rightScale, 0, 0, dpr * this.rightScale, this.rightOffset.x * dpr, this.rightOffset.y * dpr);
-this.drawGrid(this.rightCtx);
+    this.drawGrid(this.rightCtx);
 
     // draw vectors
     this.rightVectors.forEach((vector) => {
@@ -1062,69 +983,56 @@ this.drawGrid(this.rightCtx);
     this.rightCtx.restore();
   }
 
+  drawGrid(ctx) {
+    const baseWorldStep = 20;
+    const padScreenPx  = 120;
 
-drawGrid(ctx) {
-  // --- Tweakable parameters ---
-  const baseWorldStep = 20;   // grid spacing in world units (change this to make squares larger/smaller at default zoom)
-  const padScreenPx  = 120;  // extra screen pixels to draw beyond visible edges (avoids clipping)
-  // ----------------------------
+    const canvas = ctx.canvas;
+    const rect = canvas.getBoundingClientRect();
+    const cssW = rect.width;
+    const cssH = rect.height;
+    const dpr = window.devicePixelRatio || 1;
 
-  const canvas = ctx.canvas;
-  const rect = canvas.getBoundingClientRect();
-  const cssW = rect.width;
-  const cssH = rect.height;
-  const dpr = window.devicePixelRatio || 1;
+    let scale = 1, offsetX = 0, offsetY = 0;
+    if (ctx === this.leftCtx) {
+      scale = this.leftScale || 1; offsetX = this.leftOffset.x || 0; offsetY = this.leftOffset.y || 0;
+    } else if (ctx === this.rightCtx) {
+      scale = this.rightScale || 1; offsetX = this.rightOffset.x || 0; offsetY = this.rightOffset.y || 0;
+    }
 
-  // Determine which canvas and its transform state
-  let scale = 1, offsetX = 0, offsetY = 0;
-  if (ctx === this.leftCtx) {
-    scale = this.leftScale || 1; offsetX = this.leftOffset.x || 0; offsetY = this.leftOffset.y || 0;
-  } else if (ctx === this.rightCtx) {
-    scale = this.rightScale || 1; offsetX = this.rightOffset.x || 0; offsetY = this.rightOffset.y || 0;
+    const worldLeft   = (-offsetX) / scale;
+    const worldTop    = (-offsetY) / scale;
+    const worldRight  = (cssW - offsetX) / scale;
+    const worldBottom = (cssH - offsetY) / scale;
+
+    const padWorld = padScreenPx / Math.max(1e-6, scale);
+
+    const drawMinX = Math.floor((worldLeft - padWorld) / baseWorldStep) * baseWorldStep;
+    const drawMaxX = Math.ceil ((worldRight + padWorld) / baseWorldStep) * baseWorldStep;
+    const drawMinY = Math.floor((worldTop - padWorld) / baseWorldStep) * baseWorldStep;
+    const drawMaxY = Math.ceil ((worldBottom + padWorld) / baseWorldStep) * baseWorldStep;
+
+    ctx.save();
+
+    ctx.lineWidth = Math.max(0.5, 1 / (dpr * Math.max(0.001, scale)));
+    ctx.strokeStyle = '#ecf0f1';
+    ctx.beginPath();
+
+    // Vertical lines
+    for (let x = drawMinX; x <= drawMaxX; x += baseWorldStep) {
+      ctx.moveTo(x, drawMinY);
+      ctx.lineTo(x, drawMaxY);
+    }
+
+    // Horizontal lines
+    for (let y = drawMinY; y <= drawMaxY; y += baseWorldStep) {
+      ctx.moveTo(drawMinX, y);
+      ctx.lineTo(drawMaxX, y);
+    }
+
+    ctx.stroke();
+    ctx.restore();
   }
-
-  // Compute visible world rectangle (world coords)
-  // screen_x = (world_x * scale + offsetX)
-  // => world_x = (screen_x - offsetX) / scale
-  const worldLeft   = (-offsetX) / scale;
-  const worldTop    = (-offsetY) / scale;
-  const worldRight  = (cssW - offsetX) / scale;
-  const worldBottom = (cssH - offsetY) / scale;
-
-  // Convert pad in screen px -> world units (so visual pad is consistent across zoom)
-  const padWorld = padScreenPx / Math.max(1e-6, scale);
-
-  // Expand drawing bounds so things near edges don't get clipped
-  const drawMinX = Math.floor((worldLeft - padWorld) / baseWorldStep) * baseWorldStep;
-  const drawMaxX = Math.ceil ((worldRight + padWorld) / baseWorldStep) * baseWorldStep;
-  const drawMinY = Math.floor((worldTop - padWorld) / baseWorldStep) * baseWorldStep;
-  const drawMaxY = Math.ceil ((worldBottom + padWorld) / baseWorldStep) * baseWorldStep;
-
-  ctx.save();
-
-  // Line width: keep it reasonable when zoomed (scales inversely with scale so strokes don't explode)
-  ctx.lineWidth = Math.max(0.5, 1 / (dpr * Math.max(0.001, scale)));
-  ctx.strokeStyle = '#ecf0f1';
-  ctx.beginPath();
-
-  // Vertical lines
-  for (let x = drawMinX; x <= drawMaxX; x += baseWorldStep) {
-    ctx.moveTo(x, drawMinY);
-    ctx.lineTo(x, drawMaxY);
-  }
-
-  // Horizontal lines
-  for (let y = drawMinY; y <= drawMaxY; y += baseWorldStep) {
-    ctx.moveTo(drawMinX, y);
-    ctx.lineTo(drawMaxX, y);
-  }
-
-  ctx.stroke();
-  ctx.restore();
-}
-
-
-
 
   draw() {
     this.drawLeft();
@@ -1135,12 +1043,12 @@ drawGrid(ctx) {
   /***********************
    * Vector / Info updates
    ***********************/
-   updateVectorInfo() {
+  updateVectorInfo() {
     const leftInfo = document.getElementById('leftVectorInfo');
     const rightInfo = document.getElementById('rightVectorInfo');
 
     if (this.leftVectors.length === 0) {
-      leftInfo.innerHTML = `<div class="vector-card"><p>Click and drag from the center to draw force vectors. Angles and magnitudes automatically calculated.</p></div>`;
+      leftInfo.innerHTML = `<div class="vector-card"><p>Click and drag from the centre to draw force vectors. Angles and magnitudes automatically calculated.</p></div>`;
       rightInfo.innerHTML = `<div class="vector-card"><p><strong>Instructions:</strong> Drag arrow head on the right to edit magnitude & angle once triangle is built. Drag the body to reposition.</p></div>`;
       return;
     }
@@ -1169,7 +1077,7 @@ drawGrid(ctx) {
             <button class="vector-delete-btn" onclick="simulator.deleteVector(${index})">Delete</button>
             <button class="lock-btn ${lockClass}" onclick="simulator.toggleLock(${index})" title="Prevent the angle from being changed by right-panel edits">${lockLabel}</button>
           </div>
-          ${this.showComponents ? `<div class="components-display">Fx = ${(vector.magnitude * Math.sin((vector.angle||0) * Math.PI / 180)).toFixed(1)}N<br>Fy = ${(vector.magnitude * Math.cos((vector.angle||0) * Math.PI / 180)).toFixed(1)}N</div>` : ''}
+         ${this.showComponents ? `<div class="components-display">Fx = ${(vector.magnitude * Math.sin((vector.angle||0) * Math.PI / 180)).toFixed(1)}N<br>Fy = ${(-vector.magnitude * Math.cos((vector.angle||0) * Math.PI / 180)).toFixed(1)}N</div>` : ''}
         </div>`;
     });
 
@@ -1177,7 +1085,6 @@ drawGrid(ctx) {
 
     leftInfo.innerHTML = leftHtml;
   }
-
 
   updateResultant() {
     if (this.rightVectors.length < 2) {
@@ -1240,134 +1147,216 @@ drawGrid(ctx) {
     this.draw();
     this.updateResultant();
   }
-// inside class VectorSimulator
-showScenarioBox(entry = {}) {
-  const box = document.getElementById('scenarioBox');
-  if (!box) return;
-  const titleEl = document.getElementById('scenarioTitle');
-  const textEl  = document.getElementById('scenarioText');
-  if (titleEl) titleEl.textContent = entry.title || 'Scenario';
-  if (textEl)  textEl.textContent  = entry.description || '';
-  box.hidden = false;
-  box.setAttribute('aria-hidden', 'false');
 
-  // optionally move focus to close button for accessibility
-  const closeBtn = document.getElementById('scenarioCloseBtn');
-  if (closeBtn) closeBtn.focus();
-}
-
-hideScenarioBox() {
-  const box = document.getElementById('scenarioBox');
-  if (!box) return;
-  box.hidden = true;
-  box.setAttribute('aria-hidden', 'true');
-}
-  
-  
-
-loadScenario(scenario) {
-  
-   this.clearAll(); 
-  const scenarios = this.scenarios || {
-    resultant: {
-      vectors: [
-        { magnitude: 75, angle: 35 },
-        { magnitude: 107, angle: 125 },
-        
-      ],
-      title: "Resultant Force",
-      description: "A ship is being pulled by two tug-boats. One pulls with a force of 75 kN at an angle of 55° to the direction of travel of the ship. The other pulls with a force of 107 kN at an angle of 35° to the other side of the direction of travel. Draw a vector triangle and determine the resultant force."
-    },
-    incline: {
-      vectors: [
-        { magnitude: 65, angle: -24 },
-        { magnitude: 29, angle: 66 },
-        { magnitude: 71, angle: 180 }
-      ],
-      title: "Inclined Plane",
-      description: "A box with weight, W, is at rest on an inclined plane.  The normal reaction force is 65 N and the frictional force is 29 N up the slope.  What is the angle of the plane?"
-    },
-    tension: {
-      vectors: [
-        {magnitude: 75, angle: 180 },
-        { magnitude: 30, angle: -30 },
-        { magnitude: 30, angle: 45 }
-      ],
-      title: "Tension Forces",
-      description: "A circus performer is standing on a high wire. Their weight is 750N. One side of the wire has tension T1 and is at an angle of 30° to the horizontal and the other side has a tension of T2 and is at an agle of 45° to the horizontal. Find T1 and T2. The force diagram is drawn to a scale. Lock the angles of the tension forces and adjust the magnitude until the correct values are found."
-    },
-    projectile: {
-      vectors: [
-        { magnitude: 75, angle: 180 },
-        { magnitude: 55, angle: 90 },
-        { magnitude: 35, angle: 0 }
-      ],
-      title: "Projectile Forces",
-      description: "Forces acting on a projectile with steady horizontal wind."
-    }
-  };
-
-  // guard for bad keys
-  const entry = scenarios[scenario];
-  if (!entry) {
-    console.warn(`loadScenario: unknown scenario "${scenario}"`);
-    return;
-  }
-
-  // vectors array for this scenario
-  const vectors = Array.isArray(entry.vectors) ? entry.vectors : [];
-
-  // clear existing scene
-  this.clearAll();
-
-  // compute baseline for right panel placement
- const rightRect = this.rightCanvas.getBoundingClientRect();
-const baselineY = rightRect.height / 2;
-
-
-  vectors.forEach((v, i) => {
-    const radians = (v.angle || 0) * Math.PI / 180;
-    const length = (v.magnitude || 0) * 3;
-    const color = this.colors[i % this.colors.length] || this.colors[0];
-
-    // store left vector by magnitude/angle (keeps it attached to dynamic center in drawLeft)
-    this.leftVectors.push({
-      magnitude: v.magnitude || 0,
-      angle: v.angle || 0,
-      color: color,
-      locked: false // default unlocked; you can toggle this from UI
-    });
-
-    // create corresponding right vector in absolute screen/world coords
-    const startX = 150 + i * 30;
-    this.rightVectors.push({
-      start: { x: startX, y: baselineY },
-      end:   { x: startX + length * Math.sin(radians), y: baselineY - length * Math.cos(radians) },
-      color: color,
-      magnitude: v.magnitude || 0,
-      angle: v.angle || 0,
-      originalIndex: this.leftVectors.length - 1
-    });
-  });
-
-  // update color index so further additions pick next colors
-  this.colorIndex = (this.colorIndex + vectors.length) % this.colors.length;
-
-  // Show scenario box (if present in DOM)
-  const box = document.getElementById('scenarioBox');
-  if (box) {
+  showScenarioBox(entry = {}) {
+    const box = document.getElementById('scenarioBox');
+    if (!box) return;
     const titleEl = document.getElementById('scenarioTitle');
     const textEl  = document.getElementById('scenarioText');
     if (titleEl) titleEl.textContent = entry.title || 'Scenario';
     if (textEl)  textEl.textContent  = entry.description || '';
     box.hidden = false;
+    box.style.display = 'block';
+
+    const closeBtn = document.getElementById('scenarioCloseBtn');
+    if (closeBtn) closeBtn.focus();
   }
 
-  // refresh UI & drawing
+  hideScenarioBox() {
+    const box = document.getElementById('scenarioBox');
+    if (!box) return;
+    box.hidden = true;
+    box.style.display = 'none';
+  }
+toggleAngles() {
+  this.showAngles = !this.showAngles;
+  const btn = document.getElementById('anglesBtn');
+  if (this.showAngles) { 
+    btn.classList.add('active'); 
+    btn.textContent = 'Hide Angles'; 
+  } else { 
+    btn.classList.remove('active'); 
+    btn.textContent = 'Show Angles'; 
+  }
   this.draw();
-  this.updateVectorInfo();
 }
+  loadScenario(scenario) {
+    this.clearAll();
+    const scenarios = {
+      resultant: {
+        vectors: [
+          { magnitude: 75, angle: 35 },
+          { magnitude: 107, angle: 125 },
+        ],
+        title: "Resultant Force",
+        description: "A ship is being pulled by two tug-boats. One pulls with a force of 75 kN at an angle of 55° to the direction of travel of the ship. The other pulls with a force of 107 kN at an angle of 35° to the other side of the direction of travel. Draw a vector triangle and determine the resultant force."
+      },
+      incline: {
+        vectors: [
+            { magnitude: 65, angle: -24 },
+        { magnitude: 29, angle: 66 },
+        { magnitude: 71, angle: 180 }
+        ],
+        title: "Inclined Plane",
+        description: "A box with weight, W, is at rest on an inclined plane. The normal reaction force is 65 N and the frictional force is 29 N up the slope. What is the angle of the plane?"
+      },
+      tension: {
+        vectors: [
+          { magnitude: 75, angle: 180 },
+          { magnitude: 30, angle: -30 },
+          { magnitude: 30, angle: 45 }
+        ],
+        title: "Tension Forces",
+        description: "A circus performer is standing on a high wire. Their weight is 750N. One side of the wire has tension T1 and is at an angle of 30° to the horizontal and the other side has a tension of T2 and is at an agle of 45° to the horizontal. Find T1 and T2. The force diagram is drawn to a scale. Lock the angles of the tension forces and adjust the magnitude until the correct values are found."
+      },
+      projectile: {
+        vectors: [
+          { magnitude: 25, angle: 180 },
+          { magnitude: 30, angle: -120 },
+          { magnitude: 38, angle: 26 }
+        ],
+        title: "Components",
+        description: "The diagram shows the forces acting on a kite. The weight is 25 N, the wind is blowing upwards on the kite with a force of 38N at an angle of 26° to the vertical. If the string is pulling back down at an angle of 30° to the vertical, what must the tension in the string be? Use the vertical and horizontal components of the tension to help."
+      }
+    };
 
+    const entry = scenarios[scenario];
+    if (!entry) {
+      console.warn(`loadScenario: unknown scenario "${scenario}"`);
+      return;
+    }
+
+    const vectors = Array.isArray(entry.vectors) ? entry.vectors : [];
+
+    const rightRect = this.rightCanvas.getBoundingClientRect();
+    const baselineY = rightRect.height / 2;
+
+    vectors.forEach((v, i) => {
+      const radians = (v.angle || 0) * Math.PI / 180;
+      const length = (v.magnitude || 0) * 3;
+      const color = this.colors[i % this.colors.length] || this.colors[0];
+
+      this.leftVectors.push({
+        magnitude: v.magnitude || 0,
+        angle: v.angle || 0,
+        color: color,
+        locked: false
+      });
+
+      const startX = 50 + i * 30;
+      this.rightVectors.push({
+        start: { x: startX, y: baselineY },
+        end:   { x: startX + length * Math.sin(radians), y: baselineY - length * Math.cos(radians) },
+        color: color,
+        magnitude: v.magnitude || 0,
+        angle: v.angle || 0,
+        originalIndex: this.leftVectors.length - 1
+      });
+    });
+
+    this.colorIndex = (this.colorIndex + vectors.length) % this.colors.length;
+
+    this.showScenarioBox(entry);
+
+    this.draw();
+    this.updateVectorInfo();
+  }
+
+  toggleLock(index) {
+    if (index < 0 || index >= this.leftVectors.length) return;
+    const vec = this.leftVectors[index];
+    vec.locked = !vec.locked;
+    this.updateVectorInfo();
+    this.draw();
+  }
+
+  addVectorNumerically() {
+    const magInput = document.getElementById('magnitudeInput');
+    const angInput = document.getElementById('angleInput');
+    
+     const magnitude = parseFloat(magInput.value) || 0; 
+  const angle = parseFloat(angInput.value) || 0;
+    
+    if (magnitude < 0.1 || magnitude > 200) {
+      alert('Please enter a magnitude between 0.1 and 200 N');
+      return;
+    }
+
+    const color = this.colors[this.colorIndex % this.colors.length];
+    this.colorIndex++;
+
+    this.leftVectors.push({
+      magnitude: magnitude,
+      angle: angle,
+      color: color,
+      locked: false
+    });
+
+    const rightRect = this.rightCanvas.getBoundingClientRect();
+    const baselineY = rightRect.height / 2;
+    const startX = 150 + this.rightVectors.length * 30;
+    const radians = angle * Math.PI / 180;
+    const length = magnitude * 3;
+
+    this.rightVectors.push({
+      start: { x: startX, y: baselineY },
+      end: {
+        x: startX + length * Math.sin(radians),
+        y: baselineY - length * Math.cos(radians)
+      },
+      color: color,
+      magnitude: magnitude,
+      angle: angle,
+      originalIndex: this.leftVectors.length - 1
+    });
+
+    magInput.value = '';
+    angInput.value = '';
+
+    this.draw();
+    this.updateVectorInfo();
+  }
+
+  updateVector(index) {
+    if (index < 0 || index >= this.leftVectors.length) return;
+    
+    const magInput = document.getElementById(`mag_${index}`);
+    const angInput = document.getElementById(`ang_${index}`);
+    
+    const newMagnitude = parseInt(magInput.value) || 0;
+    const newAngle = parseFloat(angInput.value) || 0;
+
+    if (newMagnitude < 1 || newMagnitude > 200) {
+      alert('Magnitude must be between 1 and 200 N');
+      return;
+    }
+
+    const leftVec = this.leftVectors[index];
+    leftVec.magnitude = newMagnitude;
+    if (!leftVec.locked) {
+      leftVec.angle = newAngle;
+    }
+
+    const rightIndex = this.rightVectors.findIndex(v => v.originalIndex === index);
+    if (rightIndex !== -1) {
+      const rightVec = this.rightVectors[rightIndex];
+      const radians = leftVec.angle * Math.PI / 180;
+      const length = newMagnitude * 3;
+      
+      const dx = length * Math.sin(radians);
+      const dy = -length * Math.cos(radians);
+      
+      rightVec.end = {
+        x: rightVec.start.x + dx,
+        y: rightVec.start.y + dy
+      };
+      rightVec.magnitude = newMagnitude;
+      rightVec.angle = leftVec.angle;
+    }
+
+    this.draw();
+    this.updateResultant();
+  }
 
   deleteVector(index) {
     if (index < 0 || index >= this.leftVectors.length) return;
@@ -1380,47 +1369,34 @@ const baselineY = rightRect.height / 2;
   }
 
   clearAll() {
-  this.leftVectors = [];
-  this.rightVectors = [];
-  this.colorIndex = 0;
-  this.showComponents = false;
-  const compBtn = document.getElementById('componentsBtn');
-  if (compBtn) { compBtn.classList.remove('active'); compBtn.textContent = 'Show Components'; }
-  const mag = document.getElementById('magnitudeInput'); const ang = document.getElementById('angleInput');
-  if (mag) mag.value = ''; if (ang) ang.value = '';
+    this.leftVectors = [];
+    this.rightVectors = [];
+    this.colorIndex = 0;
+    this.showComponents = false;
+    const compBtn = document.getElementById('componentsBtn');
+    if (compBtn) { compBtn.classList.remove('active'); compBtn.textContent = 'Show Components'; }
+    const mag = document.getElementById('magnitudeInput'); const ang = document.getElementById('angleInput');
+    if (mag) mag.value = ''; if (ang) ang.value = '';
 
-  const box = document.getElementById('scenarioBox');
-  if (box) box.hidden = true;
-
-  // Also reset zoom if you want on clear:
-  this.animateResetView('left', 150);
-  this.animateResetView('right', 150);
-
-  this.draw();
-  this.updateVectorInfo();
-}
-
-}
-
-// script.js
-
-// Your existing functions
-function hideScenarioBox() {
     const box = document.getElementById('scenarioBox');
-    if (box) {
-        box.hidden = true;
-        box.setAttribute('aria-hidden', 'true');
-    }
+    if (box) box.hidden = true;
+ 
+    this.animateResetView('left', 150);
+    this.animateResetView('right', 150);
+ this.hideScenarioBox();
+    this.draw();
+    this.updateVectorInfo();
+  }
 }
-
-// Add this at the end of script.js
-document.addEventListener('DOMContentLoaded', () => {
-    const closeBtn = document.getElementById('scenarioCloseBtn');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', hideScenarioBox);
-    }
-});
 
 // instantiate and expose
 const simulator = new VectorSimulator();
 window.simulator = simulator;
+
+// Add event listener for scenario close button
+document.addEventListener('DOMContentLoaded', () => {
+  const closeBtn = document.getElementById('scenarioCloseBtn');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => simulator.hideScenarioBox());
+  }
+});
