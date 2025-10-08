@@ -1,26 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Vector Physics Simulator - Force Diagrams & Vector Triangles</title>
-
-  <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Montserrat:wght@700&display=swap" rel="stylesheet">
-
-  <!-- Styles -->
   <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
   <div class="container">
     <div class="header">
-      <h1>Vector Physics</h1>
+      <h1>Vector Physics Simulator</h1>
     </div>
 
     <div class="controls">
-      <!-- Zoom controls (place inside .controls-actions) -->
+      <!-- Zoom controls -->
       <div class="zoom-controls" aria-label="Zoom controls">
         <button class="btn" id="zoomOutBtn" title="Zoom out">−</button>
         <button class="btn coral-btn" id="resetZoomBtn" title="Reset zoom">Zoom Reset</button>
@@ -31,8 +26,9 @@
         <button class="scenario-btn" onclick="simulator.loadScenario('resultant')">Resultant Force</button>
         <button class="scenario-btn" onclick="simulator.loadScenario('incline')">Inclined Plane</button>
         <button class="scenario-btn" onclick="simulator.loadScenario('tension')">Tension Forces</button>
-        <button class="scenario-btn" onclick="simulator.loadScenario('projectile')">Projectile Motion</button>
+        <button class="scenario-btn" onclick="simulator.loadScenario('projectile')">Components</button>
       </div>
+      <button class="btn navy-btn" id="anglesBtn" onclick="simulator.toggleAngles()">Show Angles</button>
       <button class="btn teal-btn" id="componentsBtn" onclick="simulator.toggleComponents()">Show Components</button>
       <button class="btn gold-btn" id="triangleBtn" onclick="simulator.autoArrangeTriangle()">Auto Draw</button>
       <button class="btn coral-btn" onclick="simulator.clearAll()">Clear All</button>
@@ -45,21 +41,23 @@
         </div>
        
         <div class="canvas-container">
- <div id="scenarioBox" class="scenario-box" hidden aria-hidden="true">
-          <button id="scenarioCloseBtn" class="scenario-close" aria-label="Close scenario">✕</button>
-          <div id="scenarioTitle" class="scenario-title">Scenario</div>
-          <div id="scenarioText" class="scenario-text">...</div>
-        </div>
+          <div id="scenarioBox" class="scenario-box" hidden aria-hidden="true">
+            <button id="scenarioCloseBtn" class="scenario-close" aria-label="Close scenario">✕</button>
+            <div id="scenarioTitle" class="scenario-title">Scenario</div>
+            <div id="scenarioText" class="scenario-text">...</div>
+          </div>
 
           <canvas id="leftCanvas" width="400" height="400"></canvas>
         </div>
         <div class="info-panel">
           <h4>Force Vectors</h4>
+          
+          
           <div class="add-vector-section">
             <h5>Add Vector Numerically</h5>
             <div class="input-group">
               <label>Magnitude:</label>
-              <input type="number" id="magnitudeInput" placeholder="50" min="1" max="200">
+              <input type="number" id="magnitudeInput" placeholder="0" min="1" max="200">
               <span>N</span>
             </div>
             <div class="input-group">
@@ -69,7 +67,7 @@
             </div>
             <button class="btn btn-primary" onclick="simulator.addVectorNumerically()">Add Vector</button>
           </div>
-          <div class="vector-info" id="leftVectorInfo">
+         <div class="vector-info" id="leftVectorInfo">
             <div class="vector-card">
               <p>Click and drag from the center to draw force vectors, or use the numerical inputs above.</p>
             </div>
@@ -86,6 +84,7 @@
         </div>
         <div class="info-panel">
           <h4>Vector Analysis</h4>
+        
           <div class="vector-info" id="rightVectorInfo">
             <div class="vector-card">
               <p><strong>Instructions:</strong> Drag arrow head on the right to edit magnitude & angle once triangle is built. Drag the body to reposition.</p>
@@ -99,14 +98,13 @@
               <strong>Direction:</strong> 0°<br>
               <strong>Components:</strong> Rx = 0 N, Ry = 0 N
             </div>
+              <br></br>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Script -->
   <script src="script.js"></script>
 </body>
-
 </html>
