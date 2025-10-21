@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Vector Physics Simulator - Force Diagrams & Vector Triangles</title>
+  <title>Vector Physics</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Montserrat:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -11,7 +11,7 @@
 <body>
   <div class="container">
     <div class="header">
-      <h1>Vector Physics Simulator</h1>
+      <h1>Vector Physics</h1>
     </div>
 
     <div class="controls">
@@ -30,6 +30,7 @@
       </div>
       <button class="btn navy-btn" id="anglesBtn" onclick="simulator.toggleAngles()">Show Angles</button>
       <button class="btn teal-btn" id="componentsBtn" onclick="simulator.toggleComponents()">Show Components</button>
+      <button id="resultantBtn" class="btn teal-btn">Hide Resultant</button>
       <button class="btn gold-btn" id="triangleBtn" onclick="simulator.autoArrangeTriangle()">Auto Draw</button>
       <button class="btn coral-btn" onclick="simulator.clearAll()">Clear All</button>
     </div>
