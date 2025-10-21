@@ -20,7 +20,7 @@ class VectorSimulator {
     this.dragging = null;        // index when dragging whole right vector
     this.draggingMode = null;    // "move" | "editEnd"
     this.dragOffset = { x: 0, y: 0 };
-
+this.showResultant = true;
     // cached client sizes
     this.leftClientW = 0;
     this.leftClientH = 0;
@@ -154,7 +154,8 @@ if (btnReset) btnReset.addEventListener('click', () => {
     this.rightCanvas.addEventListener('pointermove', (e) => this.handleRightPointerMove(e));
     this.rightCanvas.addEventListener('pointerup', (e) => this.handleRightPointerUp(e));
     this.rightCanvas.addEventListener('pointerleave', (e) => this.handleRightPointerUp(e));
-
+const resultantBtn = document.getElementById('resultantBtn');
+if (resultantBtn) resultantBtn.addEventListener('click', () => this.toggleResultant());
     // pointer tracking for pinch/pan on touch & pointer devices
     [this.leftCanvas, this.rightCanvas].forEach(c => {
       c.addEventListener('pointerdown', (e) => this.handlePointerTrackDown(e, c));
@@ -1096,44 +1097,46 @@ if (btnReset) btnReset.addEventListener('click', () => {
     leftInfo.innerHTML = leftHtml;
   }
 
-  updateResultant() {
-    if (this.rightVectors.length < 2) {
-      document.getElementById('resultantText').innerHTML = `
-        <strong>Magnitude:</strong> 0 N<br>
-        <strong>Direction:</strong> 0°<br>
-        <strong>Components:</strong> Rx = 0 N, Ry = 0 N
-      `;
-      return;
-    }
+ updateResultant() {
+  if (this.rightVectors.length < 2) {
+    document.getElementById('resultantText').innerHTML = `
+      <strong>Magnitude:</strong> 0 N<br>
+      <strong>Direction:</strong> 0°<br>
+      <strong>Components:</strong> Rx = 0 N, Ry = 0 N
+    `;
+    return;
+  }
 
-    let sumX = 0, sumY = 0;
-    this.rightVectors.forEach(v => {
-      const dx = v.end.x - v.start.x;
-      const dy = v.end.y - v.start.y;
-      sumX += dx; sumY += dy;
-    });
+  let sumX = 0, sumY = 0;
+  this.rightVectors.forEach(v => {
+    const dx = v.end.x - v.start.x;
+    const dy = v.end.y - v.start.y;
+    sumX += dx; sumY += dy;
+  });
 
-    const firstStart = this.rightVectors[0].start;
-    const calculatedEnd = { x: firstStart.x + sumX, y: firstStart.y + sumY };
+  const firstStart = this.rightVectors[0].start;
+  const calculatedEnd = { x: firstStart.x + sumX, y: firstStart.y + sumY };
 
-    const magnitude = Math.sqrt(sumX*sumX + sumY*sumY) / 3;
-    const angle = Math.atan2(sumX, -sumY) * 180 / Math.PI;
+  const magnitude = Math.sqrt(sumX*sumX + sumY*sumY) / 3;
+  const angle = Math.atan2(sumX, -sumY) * 180 / Math.PI;
 
-    // re-draw right (resultant drawn on top)
-    this.drawRight();
-    // draw resultant (world coords)
+  // re-draw right (resultant drawn on top)
+  this.drawRight();
+  
+  // Only draw resultant if showResultant is true
+  if (this.showResultant) {
     this.rightCtx.save();
     const dpr = window.devicePixelRatio || 1;
     this.rightCtx.setTransform(dpr * this.rightScale, 0, 0, dpr * this.rightScale, this.rightOffset.x * dpr, this.rightOffset.y * dpr);
     this.drawVector(this.rightCtx, firstStart, calculatedEnd, '#2c3e50', 4, false, true);
     this.rightCtx.restore();
-
-    const ri = document.getElementById('resultantInfo');
-    if (ri) ri.style.display = 'block';
-    const rt = document.getElementById('resultantText');
-    if (rt) rt.innerHTML = `<strong>Magnitude:</strong> ${magnitude.toFixed(1)}N<br><strong>Direction:</strong> ${angle.toFixed(1)}°<br><strong>Components:</strong> Rx = ${(sumX/3).toFixed(1)}N, Ry = ${(-sumY/3).toFixed(1)}N`;
   }
 
+  const ri = document.getElementById('resultantInfo');
+  if (ri) ri.style.display = 'block';
+  const rt = document.getElementById('resultantText');
+  if (rt) rt.innerHTML = `<strong>Magnitude:</strong> ${magnitude.toFixed(1)}N<br><strong>Direction:</strong> ${angle.toFixed(1)}°<br><strong>Components:</strong> Rx = ${(sumX/3).toFixed(1)}N, Ry = ${(-sumY/3).toFixed(1)}N`;
+}
   toggleComponents() {
     this.showComponents = !this.showComponents;
     const btn = document.getElementById('componentsBtn');
@@ -1187,6 +1190,19 @@ toggleAngles() {
   } else { 
     btn.classList.remove('active'); 
     btn.textContent = 'Show Angles'; 
+  }
+  this.draw();
+}
+  
+  toggleResultant() {
+  this.showResultant = !this.showResultant;
+  const btn = document.getElementById('resultantBtn');
+  if (this.showResultant) {
+    btn.classList.add('active');
+    btn.textContent = 'Hide Resultant';
+  } else {
+     btn.classList.remove('active');
+    btn.textContent = 'Show Resultant';
   }
   this.draw();
 }
@@ -1410,3 +1426,6 @@ document.addEventListener('DOMContentLoaded', () => {
     closeBtn.addEventListener('click', () => simulator.hideScenarioBox());
   }
 });
+
+
+
