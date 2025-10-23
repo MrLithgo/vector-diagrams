@@ -45,9 +45,34 @@ this.showResultant = true;
     this.ZOOM_STEP = 1.2;
     this.MIN_SCALE = 0.25;
     this.MAX_SCALE = 6;
-
-    // Setup UI hooks
-   // Setup UI hooks
+this.units = 'force'; // 'force', 'velocity', 'momentum', 'acceleration'
+this.unitConfig = {
+  force: { 
+    name: 'Force', 
+    symbol: 'N', 
+    fullName: 'Newtons',
+    scale: 1 
+  },
+  velocity: { 
+    name: 'Velocity', 
+    symbol: 'm/s', 
+    fullName: 'meters/second',
+    scale: 1 
+  },
+  momentum: { 
+    name: 'Momentum', 
+    symbol: 'kg·m/s', 
+    fullName: 'kilogram-meters/second',
+    scale: 1 
+  },
+  acceleration: { 
+    name: 'Acceleration', 
+    symbol: 'm/s²', 
+    fullName: 'meters/second²',
+    scale: 1 
+  }
+};
+    
 const btnIn = document.getElementById('zoomInBtn');
 const btnOut = document.getElementById('zoomOutBtn');
 const btnReset = document.getElementById('resetZoomBtn');
@@ -143,6 +168,38 @@ if (btnReset) btnReset.addEventListener('click', () => {
    * Event listeners setup
    ************************/
   setupEventListeners() {
+    // Unit selector
+    // Units dropdown
+const unitsItems = document.querySelectorAll('.dropdown-item[data-value]');
+unitsItems.forEach(item => {
+  if (item.closest('.dropdown-group').querySelector('#unitsDropdownBtn')) {
+    item.addEventListener('click', (e) => {
+      const value = e.target.getAttribute('data-value');
+      this.changeUnits(value);
+      
+      // Update button text
+      const btn = document.getElementById('unitsDropdownBtn');
+      const displayText = e.target.textContent;
+      btn.textContent = `Units: ${displayText} `;
+    });
+  }
+});
+
+// Scenario dropdown  
+const scenarioItems = document.querySelectorAll('.dropdown-item[data-value]');
+scenarioItems.forEach(item => {
+  if (item.closest('.dropdown-group').querySelector('#scenarioDropdownBtn')) {
+    item.addEventListener('click', (e) => {
+      const value = e.target.getAttribute('data-value');
+      this.loadScenario(value);
+    });
+  }
+});
+const unitSelect = document.getElementById('unitSelect');
+if (unitSelect) unitSelect.addEventListener('change', (e) => this.changeUnits(e.target.value));
+    
+    
+    
     // Left canvas (drawing)
     this.leftCanvas.addEventListener('pointerdown', (e) => this.handleLeftPointerDown(e));
     this.leftCanvas.addEventListener('pointermove', (e) => this.handleLeftPointerMove(e));
@@ -267,7 +324,7 @@ if (resultantBtn) resultantBtn.addEventListener('click', () => this.toggleResult
     const rawAngle = Math.atan2(dx, -dy) * 180 / Math.PI;
 
     // snapping
-    const snappedMagnitude = Math.round(rawMagnitude / 0.3) * 0.3;
+    const snappedMagnitude = Math.round(rawMagnitude / 0.03) * 0.03;
     const snappedAngle = Math.round(rawAngle * 10) / 10;
     const snappedRadians = snappedAngle * Math.PI / 180;
 
@@ -705,9 +762,7 @@ if (resultantBtn) resultantBtn.addEventListener('click', () => this.toggleResult
     requestAnimationFrame(step);
   }
 
-  /*********************
-   * Drawing utilities
-   *********************/
+  
   drawTriangleAngles(ctx) {
      if (!this.showAngles) return;
     if (!this.rightVectors || this.rightVectors.length < 2) return;
@@ -841,11 +896,27 @@ if (resultantBtn) resultantBtn.addEventListener('click', () => this.toggleResult
       const midX = (start.x + end.x) / 2;
       const midY = (start.y + end.y) / 2;
       ctx.fillStyle = color;
-      ctx.font = isResultant ? 'bold 12px Arial' : 'bold 11px Arial';
-       const label = isResultant ? `R=${magnitude.toFixed(1)}N` : `${magnitude.toFixed(1)}N`; 
+      ctx.font = isResultant ? 'bold 12px Arial' : 'bold 12px Arial';
+       const label = isResultant ? `R=${magnitude.toFixed(1)} ${this.unitConfig[this.units].symbol}` : `${magnitude.toFixed(1)} ${this.unitConfig[this.units].symbol}`;
       ctx.fillText(label, midX + 8, midY - 8);
     }
   }
+  changeUnits(newUnit) {
+  if (this.unitConfig[newUnit]) {
+    this.units = newUnit;
+    
+    // Update dropdown button text
+    const unitsBtn = document.getElementById('unitsDropdownBtn');
+    if (unitsBtn) {
+      unitsBtn.textContent = `${this.unitConfig[newUnit].name} (${this.unitConfig[newUnit].symbol})`;
+    }
+    
+    // Update all displays
+    this.updateVectorInfo();
+    this.updateResultant();
+    this.draw();
+  }
+}
 
   drawAngleIndicator(ctx, start, end) {
      if (!this.showAngles) return;
@@ -865,7 +936,7 @@ if (resultantBtn) resultantBtn.addEventListener('click', () => this.toggleResult
     ctx.fillStyle = '#2c3e50';
     ctx.font = 'bold 12px Arial';
     ctx.fillText(`${angle.toFixed(1)}°`, start.x + 35, start.y - 5);
-    ctx.fillText(`${magnitude.toFixed(1)}N`, start.x + 35, start.y + 15);
+    ctx.fillText(`${magnitude.toFixed(1)} ${this.unitConfig[this.units].symbol}`, start.x + 35, start.y + 15);
   }
 
  drawComponents(ctx, vector) {
@@ -892,8 +963,8 @@ if (resultantBtn) resultantBtn.addEventListener('click', () => this.toggleResult
   const hComp = (dx / 3).toFixed(1);
   const vComp = (dy / 3).toFixed(1); // Keep sign consistent
   
-  ctx.fillText(`${hComp}N`, vector.start.x + dx/2, vector.start.y - 5);
-  ctx.fillText(`${vComp}N`, vector.start.x + dx + 5, vector.start.y + dy/2);
+  ctx.fillText(`${hComp} ${this.unitConfig[this.units].symbol}`, vector.start.x + dx/2, vector.start.y - 5);
+ctx.fillText(`${vComp} ${this.unitConfig[this.units].symbol}`, vector.start.x + dx + 5, vector.start.y + dy/2);
 }
   
   drawLeft() {
@@ -1072,23 +1143,23 @@ if (resultantBtn) resultantBtn.addEventListener('click', () => this.toggleResult
 
       leftHtml += `
         <div class="vector-card" style="border-left-color: ${vector.color}">
-          <h5 style="color: ${vector.color}">Force ${index + 1}</h5>
+         <h5 style="color: ${vector.color}">${this.unitConfig[this.units].name} ${index + 1}</h5
           <div class="vector-controls">
             <div class="input-group">
               <label>Magnitude:</label>
-              <input type="number" id="mag_${index}" value="${vector.magnitude}" min="1" max="200" onchange="simulator.updateVector(${index})">
-              <span>N</span>
+              <input type="number" id="mag_${index}" value="${vector.magnitude}" step="0.1" min="0.1" max="200.0" onchange="simulator.updateVector(${index})">
+              <span>${this.unitConfig[this.units].symbol}</span>
             </div>
             <div class="input-group">
               <label>Angle:</label>
-              <input type="number" id="ang_${index}" value="${(vector.angle || 0).toFixed(1)}" min="-360" max="360" onchange="simulator.updateVector(${index})">
+              <input type="number" id="ang_${index}" value="${(vector.angle || 0).toFixed(1)}" step="0.1" min="-360.0" max="360.0" onchange="simulator.updateVector(${index})">
               <span>°</span>
             </div>
             <button class="vector-edit-btn" onclick="simulator.updateVector(${index})">Update</button>
             <button class="vector-delete-btn" onclick="simulator.deleteVector(${index})">Delete</button>
             <button class="lock-btn ${lockClass}" onclick="simulator.toggleLock(${index})" title="Prevent the angle from being changed by right-panel edits">${lockLabel}</button>
           </div>
-         ${this.showComponents ? `<div class="components-display">Fx = ${(vector.magnitude * Math.sin((vector.angle||0) * Math.PI / 180)).toFixed(1)}N<br>Fy = ${(-vector.magnitude * Math.cos((vector.angle||0) * Math.PI / 180)).toFixed(1)}N</div>` : ''}
+         ${this.showComponents ? `<div class="components-display">Fx = ${(vector.magnitude * Math.sin((vector.angle||0) * Math.PI / 180)).toFixed(1)} ${this.unitConfig[this.units].symbol}<br>Fy = ${(-vector.magnitude * Math.cos((vector.angle||0) * Math.PI / 180)).toFixed(1)} ${this.unitConfig[this.units].symbol}</div>` : ''}
         </div>`;
     });
 
@@ -1100,9 +1171,9 @@ if (resultantBtn) resultantBtn.addEventListener('click', () => this.toggleResult
  updateResultant() {
   if (this.rightVectors.length < 2) {
     document.getElementById('resultantText').innerHTML = `
-      <strong>Magnitude:</strong> 0 N<br>
+      <strong>Magnitude:</strong> 0 ${this.unitConfig[this.units].symbol}<br>
       <strong>Direction:</strong> 0°<br>
-      <strong>Components:</strong> Rx = 0 N, Ry = 0 N
+      <strong>Components:</strong> Rx = 0 ${this.unitConfig[this.units].symbol}, Ry = 0 ${this.unitConfig[this.units].symbol}
     `;
     return;
   }
@@ -1135,7 +1206,7 @@ if (resultantBtn) resultantBtn.addEventListener('click', () => this.toggleResult
   const ri = document.getElementById('resultantInfo');
   if (ri) ri.style.display = 'block';
   const rt = document.getElementById('resultantText');
-  if (rt) rt.innerHTML = `<strong>Magnitude:</strong> ${magnitude.toFixed(1)}N<br><strong>Direction:</strong> ${angle.toFixed(1)}°<br><strong>Components:</strong> Rx = ${(sumX/3).toFixed(1)}N, Ry = ${(-sumY/3).toFixed(1)}N`;
+  if (rt) rt.innerHTML = `<strong>Magnitude:</strong> ${magnitude.toFixed(1)} ${this.unitConfig[this.units].symbol}<br><strong>Direction:</strong> ${angle.toFixed(1)}°<br><strong>Components:</strong> R<sub>x</sub> = ${(sumX/3).toFixed(1)} ${this.unitConfig[this.units].symbol}, R<sub>y</sub> = ${(-sumY/3).toFixed(1)} ${this.unitConfig[this.units].symbol}`;
 }
   toggleComponents() {
     this.showComponents = !this.showComponents;
@@ -1304,7 +1375,7 @@ toggleAngles() {
   const angle = parseFloat(angInput.value) || 0;
     
     if (magnitude < 0.1 || magnitude > 200) {
-      alert('Please enter a magnitude between 0.1 and 200 N');
+      alert('Please enter a magnitude between 0.1 and 200 ${this.unitConfig[this.units].symbol}');
       return;
     }
 
@@ -1353,7 +1424,7 @@ toggleAngles() {
     const newAngle = parseFloat(angInput.value) || 0;
 
     if (newMagnitude < 1 || newMagnitude > 200) {
-      alert('Magnitude must be between 1 and 200 N');
+      alert('Magnitude must be between 1 and 200 ${this.unitConfig[this.units].symbol}');
       return;
     }
 
@@ -1414,6 +1485,8 @@ toggleAngles() {
     this.updateVectorInfo();
   }
 }
+
+
 
 // instantiate and expose
 const simulator = new VectorSimulator();
