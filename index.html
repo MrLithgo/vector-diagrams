@@ -21,14 +21,26 @@
         <button class="btn coral-btn" id="resetZoomBtn" title="Reset zoom">Zoom Reset</button>
         <button class="btn" id="zoomInBtn" title="Zoom in">+</button>
       </div>
+<div class="dropdown-group">
+  <button class="btn dropdown-btn" id="unitsDropdownBtn">Units: N</button>
+  <div class="dropdown-content">
+    <div class="dropdown-item" data-value="force">N</div>
+    <div class="dropdown-item" data-value="velocity">m/s</div>
+    <div class="dropdown-item" data-value="momentum">kg·m/s</div>
+    <div class="dropdown-item" data-value="acceleration">m/s²</div>
+  </div>
+</div>
 
-      <div class="preset-scenarios">
-        <button class="scenario-btn" onclick="simulator.loadScenario('resultant')">Resultant Force</button>
-        <button class="scenario-btn" onclick="simulator.loadScenario('incline')">Inclined Plane</button>
-        <button class="scenario-btn" onclick="simulator.loadScenario('tension')">Tension Forces</button>
-        <button class="scenario-btn" onclick="simulator.loadScenario('projectile')">Components</button>
-      </div>
-      <button class="btn navy-btn" id="anglesBtn" onclick="simulator.toggleAngles()">Show Angles</button>
+<div class="dropdown-group">
+  <button class="btn dropdown-btn" id="scenarioDropdownBtn">Load Scenario</button>
+  <div class="dropdown-content">
+    <div class="dropdown-item" data-value="resultant">Resultant Force</div>
+    <div class="dropdown-item" data-value="incline">Inclined Plane</div>
+    <div class="dropdown-item" data-value="tension">Tension Forces</div>
+    <div class="dropdown-item" data-value="projectile">Components</div>
+  </div>
+</div>
+      <button class="btn teal-btn" id="anglesBtn" onclick="simulator.toggleAngles()">Show Angles</button>
       <button class="btn teal-btn" id="componentsBtn" onclick="simulator.toggleComponents()">Show Components</button>
       <button id="resultantBtn" class="btn teal-btn">Hide Resultant</button>
       <button class="btn gold-btn" id="triangleBtn" onclick="simulator.autoArrangeTriangle()">Auto Draw</button>
@@ -38,7 +50,7 @@
     <div class="main-content">
       <div class="left-panel">
         <div class="panel-header">
-          Force Diagram - Draw vectors from centre point
+          Scenario Diagram - Draw vectors from centre point
         </div>
        
         <div class="canvas-container">
@@ -51,19 +63,19 @@
           <canvas id="leftCanvas" width="400" height="400"></canvas>
         </div>
         <div class="info-panel">
-          <h4>Force Vectors</h4>
+          <h4>Vectors</h4>
           
           
           <div class="add-vector-section">
             <h5>Add Vector Numerically</h5>
             <div class="input-group">
               <label>Magnitude:</label>
-              <input type="number" id="magnitudeInput" placeholder="0" min="1" max="200">
-              <span>N</span>
+              <input type="number" id="magnitudeInput" placeholder="0.0" min="0.1" max="200.0">
+              
             </div>
             <div class="input-group">
               <label>Angle:</label>
-              <input type="number" id="angleInput" placeholder="0" min="-360" max="360">
+              <input type="number" id="angleInput" placeholder="0.0" min="-360.0" max="360.0">
               <span>°</span>
             </div>
             <button class="btn btn-primary" onclick="simulator.addVectorNumerically()">Add Vector</button>
@@ -78,7 +90,7 @@
 
       <div class="right-panel">
         <div class="panel-header">
-          Vector Triangle - Drag to form vector addition
+          Vector Diagram - Drag to form vector addition
         </div>
         <div class="canvas-container">
           <canvas id="rightCanvas" width="400" height="400"></canvas>
