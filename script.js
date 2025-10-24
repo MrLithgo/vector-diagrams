@@ -51,25 +51,29 @@ this.unitConfig = {
     name: 'Force', 
     symbol: 'N', 
     fullName: 'Newtons',
-    scale: 1 
+    scale: 1 ,
+    short: 'F',
   },
   velocity: { 
     name: 'Velocity', 
     symbol: 'm/s', 
     fullName: 'meters/second',
-    scale: 1 
+    scale: 1 ,
+    short: 'v',
   },
   momentum: { 
     name: 'Momentum', 
     symbol: 'kg·m/s', 
     fullName: 'kilogram-meters/second',
-    scale: 1 
+    scale: 1 ,
+    short: 'p'
   },
   acceleration: { 
     name: 'Acceleration', 
     symbol: 'm/s²', 
     fullName: 'meters/second²',
-    scale: 1 
+    scale: 1 ,
+    short: 'a'
   }
 };
     
@@ -1159,7 +1163,7 @@ ctx.fillText(`${vComp} ${this.unitConfig[this.units].symbol}`, vector.start.x + 
             <button class="vector-delete-btn" onclick="simulator.deleteVector(${index})">Delete</button>
             <button class="lock-btn ${lockClass}" onclick="simulator.toggleLock(${index})" title="Prevent the angle from being changed by right-panel edits">${lockLabel}</button>
           </div>
-         ${this.showComponents ? `<div class="components-display">Fx = ${(vector.magnitude * Math.sin((vector.angle||0) * Math.PI / 180)).toFixed(1)} ${this.unitConfig[this.units].symbol}<br>Fy = ${(-vector.magnitude * Math.cos((vector.angle||0) * Math.PI / 180)).toFixed(1)} ${this.unitConfig[this.units].symbol}</div>` : ''}
+         ${this.showComponents ? `<div class="components-display">${this.unitConfig[this.units].short}<sub>x</sub> = ${(vector.magnitude * Math.sin((vector.angle||0) * Math.PI / 180)).toFixed(1)} ${this.unitConfig[this.units].symbol}<br>${this.unitConfig[this.units].short}<sub>y</sub> = ${(-vector.magnitude * Math.cos((vector.angle||0) * Math.PI / 180)).toFixed(1)} ${this.unitConfig[this.units].symbol}</div>` : ''}
         </div>`;
     });
 
@@ -1424,7 +1428,7 @@ toggleAngles() {
     const newAngle = parseFloat(angInput.value) || 0;
 
     if (newMagnitude < 1 || newMagnitude > 200) {
-      alert('Magnitude must be between 1 and 200 ${this.unitConfig[this.units].symbol}');
+      alert('Magnitude must be between 0.1 and 200 ${this.unitConfig[this.units].symbol}');
       return;
     }
 
